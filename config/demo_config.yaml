@@ -1,0 +1,130 @@
+# OSPD Mangrove Biomass Demonstrator Configuration
+
+# Study area - Thor Heyerdahl Climate Park, Myanmar
+study_area:
+  name: "Thor Heyerdahl Climate Park"
+  # Approximate bounding box for the park area
+  bounds:
+    west: 94.5
+    south: 16.5
+    east: 95.0
+    north: 17.0
+  # Specific point of interest (Pathein city nearby)
+  center:
+    lon: 94.73212
+    lat: 16.77919
+  # Small demo area for quick testing
+  demo_bounds:
+    west: 94.7
+    south: 16.7
+    east: 94.8
+    north: 16.8
+
+# rHEALPix parameters
+rhealpix:
+  resolution: 11  # ~54m cells, good for mangrove monitoring
+  n_side: 3  # Standard parameter for rHEALPix
+  ellipsoid: "WGS84"  # Earth model
+  plane: false  # Always use geographic coordinates
+
+# Sentinel-2 data access
+sentinel2:
+  stac_url: "https://earth-search.aws.element84.com/v1"
+  collection: "sentinel-2-l2a"
+  max_cloud_cover: 20  # Maximum cloud cover percentage
+  date_range:
+    start: "2024-01-01"  # Will be updated to last 30 days dynamically
+    end: "2024-03-01"
+  bands:
+    - "red"     # B4 - 665nm
+    - "nir"     # B8 - 842nm
+    - "green"   # B3 - 560nm
+    - "blue"    # B2 - 490nm
+    - "rededge1" # B5 - 705nm
+    - "rededge2" # B6 - 740nm
+    - "scl"     # Scene classification layer
+
+# Biomass estimation model parameters
+biomass_model:
+  type: "ndvi_linear"  # Simple NDVI-based linear model
+  # Coefficients from Southeast Asian mangrove studies
+  ndvi_coefficients:
+    a: 250.5  # Slope (Mg/ha per NDVI unit)
+    b: -75.2  # Intercept (Mg/ha)
+  # Valid NDVI range for mangroves
+  ndvi_range:
+    min: 0.3  # Below this, likely not mangrove
+    max: 0.9  # Above this, likely saturated
+  # Output units
+  units: "Mg/ha"  # Megagrams per hectare (metric tons)
+
+# Data processing parameters
+processing:
+  chunk_size:
+    time: 1
+    x: 2048
+    y: 2048
+  dask:
+    n_workers: 4
+    memory_limit: "2GB"
+  cache:
+    enable: true
+    directory: "data/cache"
+    max_size_gb: 10
+
+# Visualization parameters
+visualization:
+  colormap: "RdYlGn"  # Red-Yellow-Green for biomass
+  biomass_range:
+    min: 0    # Mg/ha
+    max: 300  # Mg/ha
+  cell_opacity: 0.7
+  cell_edge_color: "black"
+  cell_edge_width: 0.5
+  # Map providers
+  base_maps:
+    - "OpenStreetMap"
+    - "Satellite"
+
+# Platform compatibility settings
+platforms:
+  # Settings to ensure identical results across platforms
+  random_seed: 42
+  float_precision: "float32"
+  # Disable any platform-specific optimizations
+  use_gpu: false
+  use_native_blas: false
+
+# Extensibility hooks
+extensions:
+  # Alternative data sources (for future integration)
+  alternative_sources:
+    - name: "Landsat"
+      enabled: false
+      stac_url: null
+    - name: "Planet"
+      enabled: false
+      api_key: null
+  # Alternative biomass models
+  alternative_models:
+    - name: "random_forest"
+      enabled: false
+      model_path: null
+    - name: "neural_network"
+      enabled: false
+      model_path: null
+  # Regional extensions
+  regions:
+    - name: "Bangladesh Sundarbans"
+      bounds: {west: 88.0, south: 21.5, east: 90.0, north: 22.5}
+      enabled: false
+    - name: "Thailand Mangroves"
+      bounds: {west: 99.0, south: 7.5, east: 100.0, north: 8.5}
+      enabled: false
+
+# Output settings
+output:
+  format: "geojson"  # Output format for results
+  include_metadata: true
+  coordinate_precision: 6  # Decimal places for coordinates
+  save_intermediate: true  # Save intermediate processing steps
