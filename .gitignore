@@ -24,21 +24,62 @@ wheels/
 *.egg
 
 # Jupyter
-.ipynb_checkpoints
+.ipynb_checkpoints/
 */.ipynb_checkpoints/*
+.jupyter_ystore.db
+*.ipynb.invalid
 
 # Data files (large satellite imagery)
 *.tif
 *.tiff
 *.hdf
 *.nc
-data/raw/*
-!data/raw/.gitkeep
+data/
+data_cache/
 
-# Outputs
+# Outputs and intermediate results
+*.csv
+*.json
 outputs/*.png
 outputs/*.jpg
 results/*.csv
+mangrove_workflow_preview.html
+
+# Development scripts and intermediate work
+add_visual_confirmation.py
+fix_notebook.py
+visual_confirmation_cell.py
+test_installation.py
+quick_check.sh
+launch.sh
+environment.yml
+requirements-minimal.txt
+validity_assessment.md
+
+# Documentation drafts and internal notes
+INTERNAL_STATUS.md
+BUG_FIX.md
+FINAL_STEPS.md
+GITLAB_SETUP.md
+INSTALLATION_GUIDE.md
+LAUNCH_CHECKLIST.md
+READY_TO_TEST.md
+REAL_DATA_FIX.md
+WEB_UPLOAD_GUIDE.md
+QUICKSTART.md
+WORKFLOW_README.md
+VALIDATION_SESSION.md
+OBSOLETE_NOTEBOOKS.md
+UPLOAD_SUMMARY.md
+SHAREABLE_STATUS.md
+WIKI_PASTE_READY.md
+WIKI_PASTE_READY_V2.md
+FILE_CONNECTIONS_DIAGRAM.md
+
+# Config and source folders (intermediate work)
+config/
+src/
+archive/
 
 # IDEs
 .vscode/
