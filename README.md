@@ -7,7 +7,7 @@
 Open Science Platform Demonstrator for OGC 2025
 
 ![Mangrove Forest](mangrove_hero.jpg)
-*Photo by [Unsplash](https://unsplash.com/photos/mangrove-forest)*
+*Aerial view of mangrove forest in Progreso, Mexico. Photo by Carlos Canche Uc from [Pexels](https://www.pexels.com/photo/aerial-view-of-mangrove-forest-in-progreso-mexico-29860697/)*
 
 ## Overview
 
