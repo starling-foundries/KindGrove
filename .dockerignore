@@ -1,0 +1,39 @@
+# Git
+.git
+.gitignore
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb.invalid
+
+# Data files
+*.tif
+*.tiff
+*.hdf
+*.nc
+data/
+data_cache/
+outputs/
+
+# Development files
+archive/
+config/
+src/
+*.md
+!README.md
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+.envrc
+venv/
+env/

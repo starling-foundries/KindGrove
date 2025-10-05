@@ -20,13 +20,10 @@ baseCommand: [python, mangrove_workflow_cli.py]
 
 requirements:
   DockerRequirement:
-    dockerPull: python:3.8
-  InitialWorkDirRequirement:
-    listing:
-      - entryname: mangrove_workflow_cli.py
-        entry: |
-          # CLI wrapper for mangrove workflow notebook
-          # This would contain the notebook logic adapted for command-line execution
+    dockerPull: ghcr.io/starling-foundries/kindgrove:latest
+  ResourceRequirement:
+    coresMax: 2
+    ramMax: 4096
 
 inputs:
   study_area_west:

@@ -2,6 +2,34 @@
 
 As requested, we generated Common Workflow Language specifications using two approaches.
 
+## Working CLI Implementation ✅
+
+**File:** `mangrove_workflow_cli.py`
+
+Fully functional command-line interface following OGC quickwin tutorial pattern:
+- Click library for clean argument parsing
+- STAC-based Sentinel-2 data acquisition
+- Vegetation index calculation (NDVI, NDWI, SAVI)
+- Threshold-based mangrove detection
+- Allometric biomass estimation
+- IPCC-compliant carbon accounting
+- CSV and GeoTIFF outputs
+
+**Test the CLI directly:**
+```bash
+python mangrove_workflow_cli.py --help
+
+python mangrove_workflow_cli.py \
+  --west 95.15 --south 15.9 \
+  --east 95.35 --north 16.1 \
+  --cloud-cover 20 --days-back 90
+```
+
+**Using CWL with example parameters:**
+```bash
+cwltool mangrove_workflow.cwl params.yaml
+```
+
 ## Deliverables
 
 ### 1. Manual CWL Specification ✅
