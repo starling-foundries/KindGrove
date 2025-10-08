@@ -19,6 +19,8 @@ doc: |
 baseCommand: [python, /app/mangrove_workflow_cli.py]
 
 requirements:
+  NetworkAccess:
+    networkAccess: true  # Explicitly allow network access
   DockerRequirement:
     dockerPull: ghcr.io/starling-foundries/kindgrove:latest
   ResourceRequirement:
