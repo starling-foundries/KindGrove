@@ -86,24 +86,6 @@ outputs:
     outputBinding:
       glob: $(inputs.output_directory)/biomass_carbon_summary.csv
 
-  mangrove_mask:
-    type: File
-    doc: GeoTIFF raster of detected mangrove pixels
-    outputBinding:
-      glob: $(inputs.output_directory)/mangrove_mask.tif
-
-  ndvi_raster:
-    type: File
-    doc: GeoTIFF raster of NDVI values
-    outputBinding:
-      glob: $(inputs.output_directory)/ndvi.tif
-
-  biomass_raster:
-    type: File
-    doc: GeoTIFF raster of estimated biomass (Mg/ha)
-    outputBinding:
-      glob: $(inputs.output_directory)/biomass.tif
-
 hints:
   SoftwareRequirement:
     packages:
