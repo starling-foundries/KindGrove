@@ -16,7 +16,7 @@ doc: |
   5. Biomass estimation (Biomass = 250.5 × NDVI - 75.2)
   6. Carbon accounting (IPCC-compliant)
 
-baseCommand: [python, mangrove_workflow_cli.py]
+baseCommand: [python, /app/mangrove_workflow_cli.py]
 
 requirements:
   DockerRequirement:
