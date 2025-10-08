@@ -1,0 +1,10 @@
+# Sample input for mangrove analysis workflow
+# Coordinates for Ayeyarwady Region, Myanmar
+
+study_area_west: 94.5
+study_area_south: 15.7
+study_area_east: 95.5
+study_area_north: 16.7
+cloud_cover_max: 20
+days_back: 90
+output_directory: outputs
