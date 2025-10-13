@@ -76,21 +76,18 @@ def download_imagery(item, bbox):
     click.echo(f"📥 Downloading scene: {item.datetime.strftime('%Y-%m-%d')}")
     click.echo(f"   Cloud cover: {item.properties.get('eo:cloud_cover', 'N/A'):.1f}%")
 
-    # Load imagery
+    # Load imagery with bounds_latlon to clip during load (fixes NaN issue)
     sentinel2_lazy = stackstac.stack(
         [item],
         assets=['red', 'green', 'nir'],
         epsg=4326,
         resolution=0.0001,  # ~10m at equator
-        chunksize=(1, 1, 2048, 2048)
+        bounds_latlon=bbox,  # Clip to study area during load
+        chunksize=(1, 1, 512, 512)
     )
 
-    # Compute and clip to bbox
-    sentinel2_full = sentinel2_lazy.compute()
-    sentinel2_data = sentinel2_full.sel(
-        x=slice(bbox[0], bbox[2]),
-        y=slice(bbox[3], bbox[1])
-    )
+    # Compute data (already clipped by bounds_latlon)
+    sentinel2_data = sentinel2_lazy.compute()
 
     click.echo(f"   Data shape: {sentinel2_data.shape}")
 
