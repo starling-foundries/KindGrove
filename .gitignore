@@ -55,6 +55,9 @@ launch.sh
 environment.yml
 requirements-minimal.txt
 validity_assessment.md
+debug_*.py
+fix_*.py
+final_fix_*.py
 
 # Test and development notebooks
 test_cwl_simple.ipynb
@@ -98,3 +101,6 @@ Thumbs.db
 # Environment
 .env
 .envrc
+
+# Pre-commit
+.pre-commit-config.yaml.swp

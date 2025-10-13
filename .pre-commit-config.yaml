@@ -1,0 +1,112 @@
+# Pre-commit hooks for KindGrove Mangrove Workflow
+# Install: pip install pre-commit && pre-commit install
+# Run manually: pre-commit run --all-files
+# Skip if needed: git commit --no-verify
+
+repos:
+  # Basic file hygiene
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: trailing-whitespace
+        exclude: \.ipynb$  # Notebooks handled separately
+      - id: end-of-file-fixer
+        exclude: \.ipynb$
+      - id: check-added-large-files
+        args: ['--maxkb=500']
+      - id: check-json
+      - id: check-yaml
+        args: ['--unsafe']  # Allow custom YAML tags
+        exclude: ^mangrove_workflow\.cwl$  # CWL uses special syntax
+      - id: check-merge-conflict
+      - id: detect-private-key
+      - id: mixed-line-ending
+        args: ['--fix=lf']
+      - id: check-case-conflict
+      - id: check-docstring-first
+        exclude: ^(debug_|fix_|test_).*\.py$
+
+  # Python code formatting
+  - repo: https://github.com/psf/black
+    rev: 23.12.1
+    hooks:
+      - id: black
+        language_version: python3
+        exclude: ^(debug_|fix_).*\.py$  # Exclude dev/debug scripts
+
+  # Import sorting
+  - repo: https://github.com/pycqa/isort
+    rev: 5.13.2
+    hooks:
+      - id: isort
+        args: ['--profile', 'black']  # Compatible with black
+        exclude: ^(debug_|fix_).*\.py$
+
+  # Fast linting
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.1.9
+    hooks:
+      - id: ruff
+        args: ['--fix', '--exit-non-zero-on-fix']
+        exclude: ^(debug_|fix_|test_).*\.py$
+
+  # Jupyter notebook handling
+  - repo: https://github.com/kynan/nbstripout
+    rev: 0.7.1
+    hooks:
+      - id: nbstripout
+        files: \.ipynb$
+        args: ['--extra-keys', 'metadata.kernelspec metadata.language_info.version']
+
+  # Apply black/isort to notebook code cells
+  - repo: https://github.com/nbQA-dev/nbQA
+    rev: 1.7.1
+    hooks:
+      - id: nbqa-black
+        exclude: ^test.*\.ipynb$
+        additional_dependencies: [black==23.12.1]
+      - id: nbqa-isort
+        args: ['--profile', 'black']
+        exclude: ^test.*\.ipynb$
+        additional_dependencies: [isort==5.13.2, black==23.12.1]
+
+  # Security checks
+  - repo: https://github.com/PyCQA/bandit
+    rev: 1.7.6
+    hooks:
+      - id: bandit
+        args: ['-c', 'pyproject.toml']
+        additional_dependencies: ['bandit[toml]']
+        exclude: ^(debug_|fix_|test_).*\.py$
+
+  # Custom project-specific checks
+  - repo: local
+    hooks:
+      # Block data files from being committed
+      - id: block-data-files
+        name: Block satellite data files
+        entry: Data files should not be committed (use .gitignore)
+        language: fail
+        files: \.(tif|tiff|hdf|nc|zarr)$
+
+      # Block output files
+      - id: block-output-files
+        name: Block output CSV files
+        entry: Output files should not be committed
+        language: fail
+        files: ^(outputs/|.*_summary\.csv|.*_biomass\.csv)
+
+      # Validate CWL files
+      - id: validate-cwl
+        name: Validate CWL syntax
+        entry: scripts/validate_cwl.sh
+        language: script
+        files: \.cwl$
+        pass_filenames: true
+
+      # Check requirements.txt
+      - id: requirements-txt-sorted
+        name: Check requirements.txt is sorted
+        entry: scripts/check_requirements.sh
+        language: script
+        files: ^requirements\.txt$
