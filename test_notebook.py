@@ -4,6 +4,7 @@ Quick test script to validate notebook functionality without running full workfl
 """
 
 import sys
+
 import numpy as np
 import pandas as pd
 
@@ -15,6 +16,7 @@ try:
     import numpy as np
     import pandas as pd
     import xarray as xr
+
     print("✅ Core libraries (numpy, pandas, xarray)")
 except ImportError as e:
     print(f"❌ Core libraries: {e}")
@@ -24,6 +26,7 @@ except ImportError as e:
 try:
     import geopandas as gpd
     from shapely.geometry import Point, box
+
     print("✅ Geospatial libraries (geopandas, shapely)")
 except ImportError as e:
     print(f"❌ Geospatial libraries: {e}")
@@ -31,9 +34,10 @@ except ImportError as e:
 
 # Test 3: STAC and satellite data
 try:
-    from pystac_client import Client
-    import stackstac
     import rioxarray
+    import stackstac
+    from pystac_client import Client
+
     print("✅ STAC libraries (pystac_client, stackstac, rioxarray)")
 except ImportError as e:
     print(f"⚠️  STAC libraries: {e}")
@@ -41,8 +45,9 @@ except ImportError as e:
 
 # Test 4: Visualization
 try:
-    import plotly.graph_objects as go
     import plotly.express as px
+    import plotly.graph_objects as go
+
     print("✅ Plotly visualization")
 except ImportError as e:
     print(f"❌ Plotly: {e}")
@@ -52,6 +57,7 @@ except ImportError as e:
 try:
     import ipywidgets as widgets
     from IPython.display import display
+
     print("✅ Jupyter widgets (ipywidgets)")
 except ImportError as e:
     print(f"❌ Jupyter widgets: {e}")
@@ -89,23 +95,17 @@ except Exception as e:
 print("\n📊 Testing Visualization...")
 try:
     # Create test contour plot
-    fig = go.Figure(data=go.Contour(
-        z=biomass,
-        x=lons,
-        y=lats,
-        colorscale='Viridis',
-        contours=dict(
-            start=0,
-            end=200,
-            size=20,
-            showlabels=True
+    fig = go.Figure(
+        data=go.Contour(
+            z=biomass,
+            x=lons,
+            y=lats,
+            colorscale="Viridis",
+            contours=dict(start=0, end=200, size=20, showlabels=True),
         )
-    ))
-
-    fig.update_layout(
-        title='Test Isopleth Map',
-        height=400
     )
+
+    fig.update_layout(title="Test Isopleth Map", height=400)
 
     print("✅ Plotly contour (isopleth) visualization working")
 
@@ -117,6 +117,7 @@ except Exception as e:
 print("\n🌐 Testing STAC Connection...")
 try:
     from pystac_client import Client
+
     catalog = Client.open("https://earth-search.aws.element84.com/v1")
     print(f"✅ Connected to AWS STAC catalog")
     print(f"   Catalog ID: {catalog.id}")
