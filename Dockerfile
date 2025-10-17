@@ -23,8 +23,5 @@ COPY mangrove_workflow_cli.py .
 # Make script executable
 RUN chmod +x mangrove_workflow_cli.py
 
-# Set entrypoint
-ENTRYPOINT ["python", "mangrove_workflow_cli.py"]
-
 # Default command shows help
 CMD ["--help"]

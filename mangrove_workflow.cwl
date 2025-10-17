@@ -16,9 +16,11 @@ doc: |
   5. Biomass estimation (Biomass = 250.5 × NDVI - 75.2)
   6. Carbon accounting (IPCC-compliant)
 
-baseCommand: [python, mangrove_workflow_cli.py]
+baseCommand: [python, /app/mangrove_workflow_cli.py]
 
 requirements:
+  NetworkAccess:
+    networkAccess: true  # Explicitly allow network access
   DockerRequirement:
     dockerPull: ghcr.io/starling-foundries/kindgrove:latest
   ResourceRequirement:
@@ -83,24 +85,6 @@ outputs:
     doc: CSV file with biomass and carbon stock totals
     outputBinding:
       glob: $(inputs.output_directory)/biomass_carbon_summary.csv
-
-  mangrove_mask:
-    type: File
-    doc: GeoTIFF raster of detected mangrove pixels
-    outputBinding:
-      glob: $(inputs.output_directory)/mangrove_mask.tif
-
-  ndvi_raster:
-    type: File
-    doc: GeoTIFF raster of NDVI values
-    outputBinding:
-      glob: $(inputs.output_directory)/ndvi.tif
-
-  biomass_raster:
-    type: File
-    doc: GeoTIFF raster of estimated biomass (Mg/ha)
-    outputBinding:
-      glob: $(inputs.output_directory)/biomass.tif
 
 hints:
   SoftwareRequirement:
