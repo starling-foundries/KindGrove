@@ -167,7 +167,7 @@ $graph:
 
     hints:
       DockerRequirement:
-        dockerPull: ghcr.io/geolabs/kindgrove/mangrove-cwl:v0.0.1-rc1
+        dockerPull: ghcr.io/geolabs/kindgrove/mangrove-cwl:v0.0.1-rc2
     inputs:
       cloud_cover_max:
         inputBinding:
@@ -206,7 +206,7 @@ $graph:
 $namespaces:
   s: https://schema.org/
 cwlVersion: v1.0
-s:softwareVersion: "0.0.1-rc1"
+s:softwareVersion: "0.0.1-rc2"
 
 s:author:
   - class: s:Person
