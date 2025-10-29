@@ -1,0 +1,123 @@
+name: Build CWL Docker Image
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch: # Manual trigger
+
+jobs:
+  build-cwl-image:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Fetch all history for all branches and tags
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Create Python virtual environment
+      run: |
+        python -m venv venv
+        source venv/bin/activate
+        python -m pip install --upgrade pip
+
+    - name: Install dependencies
+      run: |
+        source venv/bin/activate
+        # Installing base dependencies
+        pip install jupyter nbconvert matplotlib pandas
+
+        # Installing ipython2cwl from GitHub (corrected version)
+        pip install git+https://github.com/gfenoy/ipython2cwl.git
+
+        # Verifying installation
+        pip list | grep ipython2cwl
+
+    - name: Verify ipython2cwl installation
+      run: |
+        source venv/bin/activate
+        jupyter-repo2cwl --help
+
+    - name: Generate CWL Docker image with repo2cwl
+      run: |
+        source venv/bin/activate
+
+        # Create output directory if it doesn't exist
+        mkdir -p myApplication/cwl_output
+
+        cd myApplication
+        cp ../*for_cwl.ipynb . || echo "⚠️  No notebooks found in project root"
+        cp ../requirements.txt . || echo "⚠️  No requirements.txt found in project root"
+
+        # Generate Docker image and CWL tools
+        jupyter-repo2cwl . -o cwl_output
+
+        # List generated files
+        echo "=== Generated CWL files ==="
+        ls -la cwl_output/
+
+        # Display content of generated CWL files
+        echo "=== Content of generated CWL tools ==="
+        find cwl_output -name "*.cwl" -exec echo "=== {} ===" \; -exec cat {} \;
+
+    - name: List Docker images
+      run: |
+        echo "=== Available Docker images ==="
+        docker images
+
+        echo "=== Images with the repo2docker tag ==="
+        docker images | grep -i r2d || echo "No repo2docker images found"
+
+    - name: Archive CWL artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: cwl-tools-and-workflows
+        path: |
+          cwl_output/
+          *.cwl
+        retention-days: 30
+
+    - name: Save Docker image (if generated)
+      run: |
+        # Get the name of the generated Docker image
+        DOCKER_IMAGE=$(docker images --format "table {{.Repository}}:{{.Tag}}" | grep -E "^r2d-" | head -n 1 || echo "")
+        
+        if [ ! -z "$DOCKER_IMAGE" ]; then
+          echo "=== Saving Docker image: $DOCKER_IMAGE ==="
+          docker save $DOCKER_IMAGE | gzip > docker-image.tar.gz
+          ls -lh docker-image.tar.gz
+        else
+          echo "No repo2docker generated Docker image found"
+        fi
+
+    - name: Upload Docker image artifact
+      uses: actions/upload-artifact@v3
+      if: success()
+      with:
+        name: docker-image
+        path: docker-image.tar.gz
+        retention-days: 7
+
+    - name: Summary
+      run: |
+        echo "=== CWL Generation Summary ==="
+        echo "✅ ipython2cwl installation successful"
+        echo "✅ CWL tools generation completed"
+        
+        if [ -d "cwl_output" ]; then
+          CWL_COUNT=$(find cwl_output -name "*.cwl" | wc -l)
+          echo "📄 Number of CWL files generated: $CWL_COUNT"
+        fi
+        
+        DOCKER_COUNT=$(docker images | grep -c -E "^r2d-" || echo "0")
+        echo "🐳 Number of Docker images generated: $DOCKER_COUNT"
