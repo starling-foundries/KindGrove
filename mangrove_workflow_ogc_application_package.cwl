@@ -206,21 +206,18 @@ $graph:
 $namespaces:
   s: https://schema.org/
 cwlVersion: v1.0
-s:softwareVersion: "0.0.1-rc2"
+s:softwareVersion: 0.0.1
 
 s:author:
   - class: s:Person
     s:name: Cameron Sajedi
 
-s:codeRepository: "https://github.com/starling-foundries/KindGrove"
 s:keywords:
   - OSPD
   - demo
-  - mangrove
-  - biomass
 
-s:license: "https://raw.githubusercontent.com/starling-foundries/KindGrove/refs/heads/main/LICENSE"
-
+s:codeRepository: "https://github.com/starling-foundries/KindGrove"
+s:license: "https://github.com/starling-foundries/KindGrove?tab=MIT-1-ov-file#readme"
 
 schemas:
 - http://schema.org/version/9.0/schemaorg-current-http.rdf
