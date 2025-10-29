@@ -74,13 +74,16 @@ jobs:
         echo "=== Content of generated CWL tools ==="
         find cwl_output -name "*.cwl" -exec echo "=== {} ===" \; -exec cat {} \;
 
-    - name: List Docker images
+    - name: Prepare CWL artifacts for archiving
       run: |
-        echo "=== Available Docker images ==="
-        docker images
-
-        echo "=== Images with the repo2docker tag ==="
-        docker images | grep -i r2d || echo "No repo2docker images found"
+        cd myApplication
+        echo "=== Files to be archived ==="
+        ls -la cwl_output/*.cwl 2>/dev/null || echo "⚠️ No .cwl files found"
+        
+        echo "=== Archive structure preview ==="
+        find cwl_output -name "*.cwl" -type f | while read file; do
+          echo "📄 Will archive: $file ($(wc -l < "$file") lines)"
+        done
 
     - name: Archive CWL artifacts
       uses: actions/upload-artifact@v4
@@ -90,26 +93,20 @@ jobs:
           myApplication/cwl_output/*.cwl
         retention-days: 30
 
-    - name: Save Docker image (if generated)
+    - name: List generated Docker images
       run: |
-        # Get the name of the generated Docker image
+        echo "=== Available Docker images ==="
+        docker images
+        
+        # Get the generated Docker image for later steps
         DOCKER_IMAGE=$(docker images --format "table {{.Repository}}:{{.Tag}}" | grep -E "^r2d-" | head -n 1 || echo "")
         
         if [ ! -z "$DOCKER_IMAGE" ]; then
-          echo "=== Saving Docker image: $DOCKER_IMAGE ==="
-          docker save $DOCKER_IMAGE | gzip > docker-image.tar.gz
-          ls -lh docker-image.tar.gz
+          echo "=== Found Docker image: $DOCKER_IMAGE ==="
+          echo "DOCKER_IMAGE=$DOCKER_IMAGE" >> $GITHUB_ENV
         else
-          echo "No repo2docker generated Docker image found"
+          echo "⚠️ No repo2docker generated Docker image found"
         fi
-
-    - name: Upload Docker image artifact
-      uses: actions/upload-artifact@v4
-      if: success()
-      with:
-        name: docker-image
-        path: docker-image.tar.gz
-        retention-days: 7
 
     - name: Login to GitHub Container Registry
       uses: docker/login-action@v3
@@ -119,10 +116,7 @@ jobs:
         password: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Push Docker image to GitHub Container Registry
-      run: |
-        # Get the generated Docker image
-        DOCKER_IMAGE=$(docker images --format "table {{.Repository}}:{{.Tag}}" | grep -E "^r2d-" | head -n 1 || echo "")
-        
+      run: |        
         if [ ! -z "$DOCKER_IMAGE" ]; then
           echo "=== Publishing Docker image to GitHub Container Registry ==="
           

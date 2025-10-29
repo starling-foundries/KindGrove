@@ -122,7 +122,7 @@ $graph:
                   "sentinel:valid_cloud_cover": true,
                   "platform": "sentinel-2b",
                   "sentinel:utm_zone": 36,
-                  "proj:epsg": 32636,
+                  "proj:epsg": 4326,
                   "sentinel:grid_square": "TT",
                   "datetime": "2019-12-05T08:42:04Z",
                   "instruments": [
@@ -167,7 +167,7 @@ $graph:
 
     hints:
       DockerRequirement:
-        dockerPull: ghcr.io/geolabs/kindgrove/mangrove-cwl:2462856c1a7eb62f09297734e5060a7acd2df59b
+        dockerPull: ghcr.io/geolabs/kindgrove/mangrove-cwl:v0.0.1-rc1
     inputs:
       cloud_cover_max:
         inputBinding:
