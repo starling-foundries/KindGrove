@@ -3,6 +3,7 @@ name: Build CWL Docker Image
 on:
   push:
     branches: [ main, develop ]
+    tags: [ 'v*' ]  # Trigger on version tags
   pull_request:
     branches: [ main ]
   workflow_dispatch: # Manual trigger
@@ -10,6 +11,9 @@ on:
 jobs:
   build-cwl-image:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write  # Required for pushing to ghcr.io
     
     steps:
     - name: Checkout repository
@@ -108,6 +112,52 @@ jobs:
         path: docker-image.tar.gz
         retention-days: 7
 
+    - name: Login to GitHub Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Push Docker image to GitHub Container Registry
+      run: |
+        # Get the generated Docker image
+        DOCKER_IMAGE=$(docker images --format "table {{.Repository}}:{{.Tag}}" | grep -E "^r2d-" | head -n 1 || echo "")
+        
+        if [ ! -z "$DOCKER_IMAGE" ]; then
+          echo "=== Publishing Docker image to GitHub Container Registry ==="
+          
+          # Create tags for the image
+          REPO_NAME="${{ github.repository }}"
+          BASE_TAG="ghcr.io/${REPO_NAME,,}/mangrove-cwl"
+          
+          # Tag with 'latest' and git SHA
+          docker tag "$DOCKER_IMAGE" "${BASE_TAG}:latest"
+          docker tag "$DOCKER_IMAGE" "${BASE_TAG}:${{ github.sha }}"
+          
+          # If it's a tag push, also tag with the version
+          if [[ "${{ github.ref }}" == refs/tags/* ]]; then
+            VERSION=${GITHUB_REF#refs/tags/}
+            docker tag "$DOCKER_IMAGE" "${BASE_TAG}:${VERSION}"
+            echo "Tagged with version: ${VERSION}"
+          fi
+          
+          # Push all tags
+          docker push "${BASE_TAG}:latest"
+          docker push "${BASE_TAG}:${{ github.sha }}"
+          
+          if [[ "${{ github.ref }}" == refs/tags/* ]]; then
+            VERSION=${GITHUB_REF#refs/tags/}
+            docker push "${BASE_TAG}:${VERSION}"
+          fi
+          
+          echo "✅ Docker image published successfully!"
+          echo "📦 Available at: ${BASE_TAG}:latest"
+          echo "📦 SHA tag: ${BASE_TAG}:${{ github.sha }}"
+        else
+          echo "⚠️ No Docker image found to publish"
+        fi
+
     - name: Summary
       run: |
         echo "=== CWL Generation Summary ==="
@@ -121,3 +171,20 @@ jobs:
         
         DOCKER_COUNT=$(docker images | grep -c -E "^r2d-" || echo "0")
         echo "🐳 Number of Docker images generated: $DOCKER_COUNT"
+        
+        # Display published image information
+        REPO_NAME="${{ github.repository }}"
+        BASE_TAG="ghcr.io/${REPO_NAME,,}/mangrove-cwl"
+        echo ""
+        echo "📦 Published Docker Images:"
+        echo "   🔗 Latest: ${BASE_TAG}:latest"
+        echo "   🔗 SHA: ${BASE_TAG}:${{ github.sha }}"
+        
+        if [[ "${{ github.ref }}" == refs/tags/* ]]; then
+          VERSION=${GITHUB_REF#refs/tags/}
+          echo "   🔗 Version: ${BASE_TAG}:${VERSION}"
+        fi
+        
+        echo ""
+        echo "💡 To use the published image:"
+        echo "   docker pull ${BASE_TAG}:latest"
