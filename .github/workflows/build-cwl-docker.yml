@@ -87,8 +87,7 @@ jobs:
       with:
         name: cwl-tools-and-workflows
         path: |
-          cwl_output/
-          *.cwl
+          myApplication/cwl_output/*.cwl
         retention-days: 30
 
     - name: Save Docker image (if generated)
