@@ -86,7 +86,7 @@ jobs:
             --south 15.9 \
             --west 95.15 
         else
-          echo "⚠️ No mangrove_workflow_ogc_application_package.cwl found
+          echo "⚠️ No mangrove_workflow_for_cwl.cwl found"
         fi
 
     - name: Prepare CWL artifacts for archiving
