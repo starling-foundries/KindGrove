@@ -74,6 +74,21 @@ jobs:
         echo "=== Content of generated CWL tools ==="
         find cwl_output -name "*.cwl" -exec echo "=== {} ===" \; -exec cat {} \;
 
+        # Run the generated CWL workflow as a test
+        if [ -f "cwl_output/mangrove_workflow_for_cwl.cwl" ]; then
+          echo "=== Testing generated CWL workflow ==="
+          cwltool cwl_output/mangrove_workflow_for_cwl.cwl \
+            --cloud_cover_max 20 \
+            --days_back 90 \
+            --east 95.35 \
+            --north 16.1 \
+            --output_dir outputs \
+            --south 15.9 \
+            --west 95.15 
+        else
+          echo "⚠️ No mangrove_workflow_ogc_application_package.cwl found
+        fi
+
     - name: Prepare CWL artifacts for archiving
       run: |
         cd myApplication
