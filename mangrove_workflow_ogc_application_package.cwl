@@ -12,7 +12,7 @@ $graph:
       InlineJavascriptRequirement: {}
     inputs:
       cloud_cover_max:
-        type: int
+        type: float
       days_back:
         type: int
       east:
@@ -57,7 +57,7 @@ $graph:
 
     hints:
       DockerRequirement:
-        dockerPull: ghcr.io/geolabs/kindgrove/mangrove-cwl:v0.0.1-rc4
+        dockerPull: ghcr.io/geolabs/kindgrove/mangrove-cwl:v0.0.1-rc5
     inputs:
       cloud_cover_max:
         inputBinding:
