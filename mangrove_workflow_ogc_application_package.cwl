@@ -57,12 +57,12 @@ $graph:
 
     hints:
       DockerRequirement:
-        dockerPull: ghcr.io/geolabs/kindgrove/mangrove-cwl:v0.0.1-rc3
+        dockerPull: ghcr.io/geolabs/kindgrove/mangrove-cwl:v0.0.1-rc4
     inputs:
       cloud_cover_max:
         inputBinding:
           prefix: --cloud_cover_max
-        type: int
+        type: float
       days_back:
         inputBinding:
           prefix: --days_back

@@ -74,21 +74,37 @@ jobs:
         echo "=== Content of generated CWL tools ==="
         find cwl_output -name "*.cwl" -exec echo "=== {} ===" \; -exec cat {} \;
 
+    - name: Try running cwltool on generated workflow storing provenance
+      run: |
+        source venv/bin/activate
+
+        cd myApplication
+
         # Run the generated CWL workflow as a test
         if [ -f "cwl_output/mangrove_workflow_for_cwl.cwl" ]; then
           echo "=== Testing generated CWL workflow ==="
-          pip install cwltool
-          cwltool cwl_output/mangrove_workflow_for_cwl.cwl \
+          pip install cwltool cwlprov
+
+          cwltool --provenance ./PROV \
+            cwl_output/mangrove_workflow_for_cwl.cwl \
             --cloud_cover_max 20 \
             --days_back 90 \
             --east 95.35 \
             --north 16.1 \
             --output_dir outputs \
             --south 15.9 \
-            --west 95.15 
+            --west 95.15
+          #cwlprov -d ./PROV/ prov
         else
           echo "⚠️ No mangrove_workflow_for_cwl.cwl found"
         fi
+
+    - name: Archive CWL Provenance
+      uses: actions/upload-artifact@v4
+      with:
+        name: provenance-metadata
+        path: myApplication/PROV/*
+        retention-days: 30
 
     - name: Prepare CWL artifacts for archiving
       run: |
