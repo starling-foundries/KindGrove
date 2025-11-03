@@ -42,7 +42,7 @@ jobs:
         pip install jupyter nbconvert matplotlib pandas
 
         # Installing ipython2cwl from GitHub (corrected version)
-        pip install git+https://github.com/gfenoy/ipython2cwl.git@feature/add-metadata
+        pip install git+https://github.com/gfenoy/ipython2cwl.git@develop
 
         # Verifying installation
         pip list | grep ipython2cwl

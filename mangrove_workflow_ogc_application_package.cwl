@@ -29,7 +29,7 @@ $graph:
       stac:
         type: Directory
         outputSource:
-          - step_1/output_directory
+          - step_1/result
     steps:
       step_1:
         in:
