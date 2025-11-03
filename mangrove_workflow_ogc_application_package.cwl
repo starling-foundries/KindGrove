@@ -12,7 +12,7 @@ $graph:
       InlineJavascriptRequirement: {}
     inputs:
       cloud_cover_max:
-        type: int
+        type: float
       days_back:
         type: int
       east:
