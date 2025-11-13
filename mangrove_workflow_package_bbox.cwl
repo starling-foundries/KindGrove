@@ -91,9 +91,6 @@ $graph:
       networkAccess: true  # Explicitly allow network access
     DockerRequirement:
       dockerPull: ghcr.io/starling-foundries/kindgrove:latest
-    ResourceRequirement:
-      coresMax: 2
-      ramMax: 8192
   
   inputs:
     study_area_west:
