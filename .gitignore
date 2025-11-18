@@ -39,11 +39,16 @@ data_cache/
 
 # Outputs and intermediate results
 *.csv
-*.json
+outputs/*.json
+results/*.json
 outputs/*.png
 outputs/*.jpg
 results/*.csv
 mangrove_workflow_preview.html
+
+# STAC data capture (reference data - keep in git)
+!stac_data_capture/
+!stac_data_capture/*.json
 
 # Development scripts and intermediate work
 add_visual_confirmation.py

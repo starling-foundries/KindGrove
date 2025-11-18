@@ -1,0 +1,68 @@
+{
+  "workflow": "Mangrove Biomass Estimation",
+  "execution_date": "2025-10-23T18:17:52.850139",
+  "study_area": {
+    "bbox": [
+      95.15,
+      15.9,
+      95.35,
+      16.1
+    ],
+    "description": "Myanmar mangrove forest"
+  },
+  "captured_files": [
+    {
+      "step": 1,
+      "file": "01_stac_search_request.json",
+      "description": "STAC catalog search parameters"
+    },
+    {
+      "step": 1,
+      "file": "01_stac_search_response.json",
+      "description": "STAC search results summary"
+    },
+    {
+      "step": 2,
+      "file": "02_stac_item_selected.json",
+      "description": "Complete STAC item for selected scene"
+    },
+    {
+      "step": 3,
+      "file": "03_stackstac_request.json",
+      "description": "stackstac.stack() parameters"
+    },
+    {
+      "step": 3,
+      "file": "03_stackstac_response.json",
+      "description": "xarray DataArray structure"
+    },
+    {
+      "step": 4,
+      "file": "04_spectral_bands.json",
+      "description": "Extracted spectral bands (red, green, nir)"
+    },
+    {
+      "step": 5,
+      "file": "05_vegetation_indices.json",
+      "description": "Calculated vegetation indices (NDVI, NDWI, SAVI)"
+    },
+    {
+      "step": 6,
+      "file": "06_mangrove_detection.json",
+      "description": "Mangrove classification results"
+    },
+    {
+      "step": 7,
+      "file": "07_biomass_carbon_results.json",
+      "description": "Final biomass and carbon estimates"
+    }
+  ],
+  "summary": {
+    "scenes_found": 1,
+    "scene_selected": "S2B_46PGC_20251003_0_L2A",
+    "mangrove_area_ha": 713.07,
+    "mean_biomass_mg_ha": 17.931292030372205,
+    "carbon_stock_mg_c": 6009.545211805828,
+    "co2_equivalent_mg": 22055.03092732739
+  }
+}
