@@ -17,19 +17,52 @@ An interactive Jupyter notebook workflow for estimating mangrove forest biomass 
 
 ## Quick Start
 
+### Option 1: marimo Notebook (Recommended)
+
 ```bash
 # Clone repository
 git clone https://github.com/starling-foundries/KindGrove.git
 cd KindGrove
 
+# Install dependencies including marimo
+pip install -r requirements.txt
+pip install "marimo[sql]"
+
+# Launch interactive marimo notebook
+marimo edit mangrove_workflow_marimo.py
+```
+
+**Features:**
+- ✨ **Fully reactive** - changes propagate automatically
+- 🔄 **No hidden state** - reproducible execution
+- 📝 **Pure Python** - git-friendly version control
+- 🤖 **AI-native** - optimized for Claude Code collaboration
+- 🎨 **Interactive Plotly** - reactive visualizations
+
+**Usage:** Select study site → Click "Search & Load Data" → Click "Detect Mangroves" → Click "Estimate Biomass" → Click "Export Results"
+
+📚 **Full Guide:** See [docs/MARIMO_USAGE.md](docs/MARIMO_USAGE.md)
+
+### Option 2: Jupyter Notebook (Classic)
+
+```bash
 # Install dependencies
 pip install -r requirements.txt
 
-# Launch notebook
+# Launch Jupyter notebook
 jupyter lab mangrove_workflow.ipynb
 ```
 
 Run cells 1-4 for setup, cell 6 to initialize study area, cell 8 to search Sentinel-2 data, then cells 11-15 for analysis and export.
+
+### Option 3: Python Script (Non-Interactive)
+
+```bash
+# Run automated workflow
+python run_mangrove_workflow.py
+```
+
+Generates the same outputs as interactive notebooks but without UI.
 
 ## What This Demonstrates
 
@@ -76,6 +109,12 @@ When independent sensors converge on the same conclusion, confidence increases. 
 
 ## Documentation
 
+### Interactive Notebooks
+- **[docs/MARIMO_USAGE.md](docs/MARIMO_USAGE.md)** - Complete marimo notebook user guide
+- **[docs/MARIMO_DESIGN.md](docs/MARIMO_DESIGN.md)** - marimo architecture and design decisions
+- **[docs/MARIMO_MIGRATION.md](docs/MARIMO_MIGRATION.md)** - Jupyter to marimo conversion log
+
+### Project Documentation
 - **HANDOFF.md** - Complete integration guide and wiki content for OGC
 - **CWL_README.md** - CWL workflow implementation summary
 - **DEMO_GUIDE.md** - Step-by-step presentation walkthrough
