@@ -1,0 +1,215 @@
+name: Build CWL Docker Image
+
+on:
+  push:
+    branches: [ main, develop ]
+    tags: [ 'v*' ]  # Trigger on version tags
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch: # Manual trigger
+
+jobs:
+  build-cwl-image:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write  # Required for pushing to ghcr.io
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Fetch all history for all branches and tags
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Create Python virtual environment
+      run: |
+        python -m venv venv
+        source venv/bin/activate
+        python -m pip install --upgrade pip
+
+    - name: Install dependencies
+      run: |
+        source venv/bin/activate
+        # Installing base dependencies
+        pip install jupyter nbconvert matplotlib pandas
+
+        # Installing ipython2cwl from GitHub (corrected version)
+        pip install git+https://github.com/gfenoy/ipython2cwl.git@develop
+
+        # Verifying installation
+        pip list | grep ipython2cwl
+
+    - name: Verify ipython2cwl installation
+      run: |
+        source venv/bin/activate
+        jupyter-repo2cwl --help
+
+    - name: Generate CWL Docker image with repo2cwl
+      run: |
+        source venv/bin/activate
+
+        # Create output directory if it doesn't exist
+        mkdir -p myApplication/cwl_output
+
+        cd myApplication
+        cp ../*for_cwl.ipynb . || echo "⚠️  No notebooks found in project root"
+        cp ../requirements.txt . || echo "⚠️  No requirements.txt found in project root"
+
+        # Generate Docker image and CWL tools
+        jupyter-repo2cwl . -o cwl_output
+
+        # List generated files
+        echo "=== Generated CWL files ==="
+        ls -la cwl_output/
+
+        # Display content of generated CWL files
+        echo "=== Content of generated CWL tools ==="
+        find cwl_output -name "*.cwl" -exec echo "=== {} ===" \; -exec cat {} \;
+
+    - name: Try running cwltool on generated workflow storing provenance
+      run: |
+        source venv/bin/activate
+
+        cd myApplication
+
+        # Run the generated CWL workflow as a test
+        if [ -f "cwl_output/mangrove_workflow_for_cwl.cwl" ]; then
+          echo "=== Testing generated CWL workflow ==="
+          pip install cwltool cwlprov
+
+          cwltool --provenance ./PROV \
+            cwl_output/mangrove_workflow_for_cwl.cwl \
+            --cloud_cover_max 20 \
+            --days_back 90 \
+            --east 95.35 \
+            --north 16.1 \
+            --output_dir outputs \
+            --south 15.9 \
+            --west 95.15
+          #cwlprov -d ./PROV/ prov
+        else
+          echo "⚠️ No mangrove_workflow_for_cwl.cwl found"
+        fi
+
+    - name: Archive CWL Provenance
+      uses: actions/upload-artifact@v4
+      with:
+        name: provenance-metadata
+        path: myApplication/PROV/*
+        retention-days: 30
+
+    - name: Prepare CWL artifacts for archiving
+      run: |
+        cd myApplication
+        echo "=== Files to be archived ==="
+        ls -la cwl_output/*.cwl 2>/dev/null || echo "⚠️ No .cwl files found"
+        
+        echo "=== Archive structure preview ==="
+        find cwl_output -name "*.cwl" -type f | while read file; do
+          echo "📄 Will archive: $file ($(wc -l < "$file") lines)"
+        done
+
+    - name: Archive CWL artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: cwl-tools-and-workflows
+        path: |
+          myApplication/cwl_output/*.cwl
+        retention-days: 30
+
+    - name: List generated Docker images
+      run: |
+        echo "=== Available Docker images ==="
+        docker images
+        
+        # Get the generated Docker image for later steps
+        DOCKER_IMAGE=$(docker images --format "table {{.Repository}}:{{.Tag}}" | grep -E "^r2d-" | head -n 1 || echo "")
+        
+        if [ ! -z "$DOCKER_IMAGE" ]; then
+          echo "=== Found Docker image: $DOCKER_IMAGE ==="
+          echo "DOCKER_IMAGE=$DOCKER_IMAGE" >> $GITHUB_ENV
+        else
+          echo "⚠️ No repo2docker generated Docker image found"
+        fi
+
+    - name: Login to GitHub Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Push Docker image to GitHub Container Registry
+      run: |        
+        if [ ! -z "$DOCKER_IMAGE" ]; then
+          echo "=== Publishing Docker image to GitHub Container Registry ==="
+          
+          # Create tags for the image
+          REPO_NAME="${{ github.repository }}"
+          BASE_TAG="ghcr.io/${REPO_NAME,,}/mangrove-cwl"
+          
+          # Tag with 'latest' and git SHA
+          docker tag "$DOCKER_IMAGE" "${BASE_TAG}:latest"
+          docker tag "$DOCKER_IMAGE" "${BASE_TAG}:${{ github.sha }}"
+          
+          # If it's a tag push, also tag with the version
+          if [[ "${{ github.ref }}" == refs/tags/* ]]; then
+            VERSION=${GITHUB_REF#refs/tags/}
+            docker tag "$DOCKER_IMAGE" "${BASE_TAG}:${VERSION}"
+            echo "Tagged with version: ${VERSION}"
+          fi
+          
+          # Push all tags
+          docker push "${BASE_TAG}:latest"
+          docker push "${BASE_TAG}:${{ github.sha }}"
+          
+          if [[ "${{ github.ref }}" == refs/tags/* ]]; then
+            VERSION=${GITHUB_REF#refs/tags/}
+            docker push "${BASE_TAG}:${VERSION}"
+          fi
+          
+          echo "✅ Docker image published successfully!"
+          echo "📦 Available at: ${BASE_TAG}:latest"
+          echo "📦 SHA tag: ${BASE_TAG}:${{ github.sha }}"
+        else
+          echo "⚠️ No Docker image found to publish"
+        fi
+
+    - name: Summary
+      run: |
+        echo "=== CWL Generation Summary ==="
+        echo "✅ ipython2cwl installation successful"
+        echo "✅ CWL tools generation completed"
+        
+        if [ -d "cwl_output" ]; then
+          CWL_COUNT=$(find cwl_output -name "*.cwl" | wc -l)
+          echo "📄 Number of CWL files generated: $CWL_COUNT"
+        fi
+        
+        DOCKER_COUNT=$(docker images | grep -c -E "^r2d-" || echo "0")
+        echo "🐳 Number of Docker images generated: $DOCKER_COUNT"
+        
+        # Display published image information
+        REPO_NAME="${{ github.repository }}"
+        BASE_TAG="ghcr.io/${REPO_NAME,,}/mangrove-cwl"
+        echo ""
+        echo "📦 Published Docker Images:"
+        echo "   🔗 Latest: ${BASE_TAG}:latest"
+        echo "   🔗 SHA: ${BASE_TAG}:${{ github.sha }}"
+        
+        if [[ "${{ github.ref }}" == refs/tags/* ]]; then
+          VERSION=${GITHUB_REF#refs/tags/}
+          echo "   🔗 Version: ${BASE_TAG}:${VERSION}"
+        fi
+        
+        echo ""
+        echo "💡 To use the published image:"
+        echo "   docker pull ${BASE_TAG}:latest"
