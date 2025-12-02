@@ -2,48 +2,114 @@
 
 $graph:
 
-  - class: Workflow
-    id: mangrove-workflow
-    label: myMockStacItem workflow
-    doc: myMockStacItem workflow
+  - class: CommandLineTool
+    id: parse_aoi
+    baseCommand: echo
+    arguments:
+    - --
     requirements:
+      InlineJavascriptRequirement: {}
+      SchemaDefRequirement:
+        types:
+          - $import: https://raw.githubusercontent.com/eoap/schemas/main/ogc.yaml
+      ResourceRequirement:
+        coresMax: 1
+        ramMax: 512
+
+    hints:
+      DockerRequirement:
+        dockerPull: alpine:3.22.2
+
+    inputs:
+      aoi:
+        type: https://raw.githubusercontent.com/eoap/schemas/main/ogc.yaml#BBox
+        label: "Area of interest"
+        doc: "Area of interest defined as a bounding box"
+    outputs:
+      west:
+        type: float
+        outputBinding:
+          outputEval: $(inputs.aoi.bbox[0])
+      south:
+        type: float
+        outputBinding:
+          outputEval: $(inputs.aoi.bbox[1])
+      east:
+        type: float
+        outputBinding:
+          outputEval: $(inputs.aoi.bbox[2])
+      north:
+        type: float
+        outputBinding:
+          outputEval: $(inputs.aoi.bbox[3])
+      output_dir:
+        type: string
+        outputBinding:
+          outputEval: $("outputs")
+
+  - class: Workflow
+    id: mangrove-workflow-demo012
+    label: Mangrove Biomass Workflow
+    doc: |
+      Workflow for Mangrove Biomass Analysis
+        
+      This workflow orchestrates the mangrove biomass estimation process using
+      Sentinel-2 imagery. It wraps the mangrove_workflow.cwl tool to provide
+      a reusable workflow for analyzing different study areas.
+    requirements:
+      StepInputExpressionRequirement: {}
       ScatterFeatureRequirement: {}
       SubworkflowFeatureRequirement: {}
       InlineJavascriptRequirement: {}
+      SchemaDefRequirement:
+        types:
+          - $import: https://raw.githubusercontent.com/eoap/schemas/main/ogc.yaml
     inputs:
       cloud_cover_max:
+        label: Maximum Cloud Cover
+        doc: Maximum acceptable cloud cover percentage (0-100)
         type: float
       days_back:
+        label: Days Back
+        doc: Number of days to search backwards from current date
         type: int
-      east:
-        type: float
-      north:
-        type: float
-      output_dir:
-        type: string
-      south:
-        type: float
-      west:
-        type: float
+      aoi:
+        label: Area of Interest
+        doc: Area of interest as a bounding box
+        type: https://raw.githubusercontent.com/eoap/schemas/main/ogc.yaml#BBox
+
     outputs:
       stac:
         type: Directory
         outputSource:
           - step_1/result
     steps:
+      parse_aoi:
+        run: '#parse_aoi'
+        in:
+          aoi: aoi
+        out:
+          - west
+          - south
+          - east
+          - north
+          - output_dir
       step_1:
         in:
           cloud_cover_max: cloud_cover_max
           days_back: days_back
-          east: east
-          north: north
-          output_dir: output_dir
-          south: south
-          west: west
+          south: parse_aoi/south
+          west: parse_aoi/west
+          east: parse_aoi/east
+          north: parse_aoi/north
+          output_dir: parse_aoi/output_dir
         run: '#mangrove_cli'
         out:
           - result
 
+  # The content below defines the mangrove_cli CommandLineTool
+  # It results from the mangrove_workflow_for_cwl.cwl jupyter 
+  # notebook conversion using the ipython2cwl tool.
   - id: mangrove_cli
     arguments:
     - --
@@ -75,10 +141,6 @@ $graph:
         inputBinding:
           prefix: --north
         type: float
-      output_dir:
-        inputBinding:
-          prefix: --output_dir
-        type: string
       south:
         inputBinding:
           prefix: --south
@@ -87,6 +149,10 @@ $graph:
         inputBinding:
           prefix: --west
         type: float
+      output_dir:
+        inputBinding:
+          prefix: --output_dir
+        type: string
     outputs:
       result:
         type: Directory
@@ -101,6 +167,11 @@ s:softwareVersion: 0.0.1
 s:author:
   - class: s:Person
     s:name: Cameron Sajedi
+
+s:contributor:
+  - class: s:Person
+    s:name: Gérald Fenoy
+    s:identifier: "https://orcid.org/0000-0002-9617-8641"
 
 s:keywords:
   - OSPD
