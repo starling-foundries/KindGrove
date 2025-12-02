@@ -123,8 +123,7 @@ $graph:
 
     hints:
       DockerRequirement:
-        dockerPull: ghcr.io/geolabs/kindgrove/mangrove-cwl:v0.0.1-rc7
-
+        dockerPull: ghcr.io/starling-foundries/kindgrove/mangrove-cwl:v0.0.1
     inputs:
       cloud_cover_max:
         inputBinding:
