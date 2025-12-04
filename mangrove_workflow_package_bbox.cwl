@@ -13,11 +13,15 @@ $graph:
 
   requirements:
     StepInputExpressionRequirement: {}
+    InlineJavascriptRequirement: {}
+    SchemaDefRequirement:
+      types:
+        - $import: https://raw.githubusercontent.com/eoap/schemas/0.2.0/ogc.yaml
   
   inputs:
     bounding_box:
       label: Bounding box
-      type: float[]
+      type: https://raw.githubusercontent.com/eoap/schemas/0.2.0/ogc.yaml#BBox
       doc: Area of interest bounding box [west, south, east, north]
     cloud_cover_max:
       label: Cloud cover max
@@ -37,16 +41,16 @@ $graph:
       in:
         study_area_west: 
           source: bounding_box
-          valueFrom: $(self[0])
+          valueFrom: $(self.bbox[0])
         study_area_south: 
           source: bounding_box
-          valueFrom: $(self[1])
+          valueFrom: $(self.bbox[1])
         study_area_east: 
           source: bounding_box
-          valueFrom: $(self[2])
+          valueFrom: $(self.bbox[2])
         study_area_north: 
           source: bounding_box
-          valueFrom: $(self[3])
+          valueFrom: $(self.bbox[3])
         cloud_cover_max: cloud_cover_max
         days_back: days_back
       out:
@@ -91,9 +95,6 @@ $graph:
       networkAccess: true  # Explicitly allow network access
     DockerRequirement:
       dockerPull: ghcr.io/starling-foundries/kindgrove:latest
-    ResourceRequirement:
-      coresMax: 2
-      ramMax: 8192
   
   inputs:
     study_area_west:
