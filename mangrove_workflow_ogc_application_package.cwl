@@ -48,7 +48,7 @@ $graph:
           outputEval: $("outputs")
 
   - class: Workflow
-    id: mangrove-workflow-demo012
+    id: mangrove-workflow
     label: Mangrove Biomass Workflow
     doc: |
       Workflow for Mangrove Biomass Analysis
@@ -71,7 +71,7 @@ $graph:
         type: float
       days_back:
         label: Days Back
-        doc: Number of days to search backwards from current date
+        doc: Number of days to search backwards from the current date
         type: int
       aoi:
         label: Area of Interest
