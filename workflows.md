@@ -36,7 +36,40 @@
 | Workflow resolution | PASS | Required `#mangrove-workflow` suffix |
 | parse_aoi step | PASS | Alpine 3.22.2 pulled successfully |
 | Docker image pull | PASS | Made GHCR package public, v0.0.1 tag pushed |
-| mangrove_cli step | FAIL | Architecture mismatch (amd64 image on arm64 host) |
+| mangrove_cli step | **PASS** | Required `--no-match-user --no-read-only` flags |
+
+---
+
+## Successful Execution
+
+**Command:**
+```bash
+cwltool --no-match-user --no-read-only \
+  mangrove_workflow_ogc_application_package.cwl#mangrove-workflow \
+  workflow_input_gerald.yml
+```
+
+**Results:**
+```
+Found 10 scenes
+Selected scene: 2025-12-05 (0.0% cloud cover)
+Detected mangrove area: 0.1 hectares
+Mean biomass: 76.1 Mg/ha
+Total biomass: 4 Mg
+Carbon stock: 2 Mg C
+CO2 equivalent: 7 Mg CO2
+```
+
+**Output Files:**
+```
+outputs/
+├── catalog.json                              # STAC catalog
+└── mangrove-analysis-20251215-202637/
+    ├── mangrove-analysis-20251215-202637.json  # STAC item metadata
+    ├── mangrove_mask.tif                       # GeoTIFF (424 KB)
+    ├── biomass_summary.csv
+    └── carbon_summary.csv
+```
 
 ---
 
@@ -244,16 +277,17 @@ Gerald's workflow uses a two-step architecture:
 
 ## Conclusions
 
-1. **Gerald's CWL workflow is well-structured** - Uses OGC Application Package patterns with proper schema imports
-2. **First step (parse_aoi) works correctly** - Successfully parses BBox using Alpine container
-3. **Docker image is now public** - v0.0.1 tag pushed, GHCR package made public
-4. **Architecture mismatch blocks local testing** - amd64 image fails on Apple Silicon (arm64)
-5. **Input schema differs from other workflows** - Uses `aoi` (OGC BBox type) instead of `bounding_box`
+1. **Gerald's CWL workflow runs successfully** - Full end-to-end execution completed
+2. **OGC Application Package patterns work** - Proper schema imports and STAC output generation
+3. **Docker image is public** - v0.0.1 tag pushed, GHCR package made public
+4. **Apple Silicon compatibility** - Requires `--no-match-user --no-read-only` flags for cwltool
+5. **Input schema uses OGC BBox** - Uses `aoi` parameter with proper type definition
 
-**Recommendations:**
+**Working Command:**
+```bash
+cwltool --no-match-user --no-read-only \
+  mangrove_workflow_ogc_application_package.cwl#mangrove-workflow \
+  workflow_input_gerald.yml
+```
 
-1. **For local Apple Silicon testing:** Build multi-arch Docker images (amd64 + arm64)
-2. **For CI/CD testing:** Workflow will run correctly on GitHub Actions (x86 runners)
-3. **For OGC platform:** Should work as-is on standard x86 infrastructure
-
-**Workflow Status:** Validated up to Docker image pull. Full execution requires x86 architecture or multi-arch image rebuild.
+**Workflow Status:** FULLY VALIDATED - Produces STAC catalog with biomass analysis results.
