@@ -235,8 +235,11 @@ def _(mo):
 
     load_data_button = mo.ui.run_button(label="🛰️ Search & Load Sentinel-2 Data")
 
-    mo.hstack([cloud_cover, days_back, load_data_button], justify="start")
-    return cloud_cover, days_back, load_data_button
+    # Display controls in horizontal layout
+    controls_layout = mo.hstack(
+        [cloud_cover, days_back, load_data_button], justify="start"
+    )
+    return cloud_cover, days_back, load_data_button, controls_layout
 
 
 @app.cell
