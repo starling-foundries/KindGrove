@@ -35,7 +35,8 @@
 | Docker availability | PASS | Docker v28.5.2 |
 | Workflow resolution | PASS | Required `#mangrove-workflow` suffix |
 | parse_aoi step | PASS | Alpine 3.22.2 pulled successfully |
-| mangrove_cli step | BLOCKED | Docker image requires GHCR authentication |
+| Docker image pull | PASS | Made GHCR package public, v0.0.1 tag pushed |
+| mangrove_cli step | FAIL | Architecture mismatch (amd64 image on arm64 host) |
 
 ---
 
@@ -138,6 +139,35 @@ Username: [waiting for input]
 
 **Solution:** Created new input file `workflow_input_gerald.yml` with correct parameter names.
 
+### Issue 4: Docker Architecture Mismatch (Apple Silicon)
+
+**Problem:** The Docker image `ghcr.io/starling-foundries/kindgrove/mangrove-cwl:v0.0.1` is built for `linux/amd64` but the test machine is Apple Silicon (`linux/arm64`).
+
+**Log excerpt:**
+```
+WARNING: The requested image's platform (linux/amd64) does not match the detected host platform (linux/arm64/v8)
+PermissionError: [Errno 13] Permission denied: '/app/cwl/bin/mangrove_workflow_for_cwl'
+```
+
+**Root Cause:** GitHub Actions runners build x86/amd64 images by default. When run on Apple Silicon Macs via Docker's Rosetta emulation, permission errors can occur with executable binaries.
+
+**Solutions:**
+
+1. **Build multi-arch image** - Update GitHub Actions workflow to build for both `linux/amd64` and `linux/arm64`:
+   ```yaml
+   - name: Set up QEMU
+     uses: docker/setup-qemu-action@v3
+
+   - name: Build and push
+     uses: docker/build-push-action@v5
+     with:
+       platforms: linux/amd64,linux/arm64
+   ```
+
+2. **Test on x86 machine** - Run CWL workflow on Linux x86 or Intel Mac
+
+3. **Use cloud execution** - Run on OGC platform or cloud CI/CD where architecture matches
+
 ---
 
 ## Workflow Architecture
@@ -216,7 +246,14 @@ Gerald's workflow uses a two-step architecture:
 
 1. **Gerald's CWL workflow is well-structured** - Uses OGC Application Package patterns with proper schema imports
 2. **First step (parse_aoi) works correctly** - Successfully parses BBox using Alpine container
-3. **Docker image accessibility is the blocker** - Main processing image requires GHCR authentication
-4. **Input schema differs from other workflows** - Uses `aoi` (OGC BBox type) instead of `bounding_box`
+3. **Docker image is now public** - v0.0.1 tag pushed, GHCR package made public
+4. **Architecture mismatch blocks local testing** - amd64 image fails on Apple Silicon (arm64)
+5. **Input schema differs from other workflows** - Uses `aoi` (OGC BBox type) instead of `bounding_box`
 
-**Recommendation:** Make the Docker image public or provide authentication instructions in the README for seamless workflow execution.
+**Recommendations:**
+
+1. **For local Apple Silicon testing:** Build multi-arch Docker images (amd64 + arm64)
+2. **For CI/CD testing:** Workflow will run correctly on GitHub Actions (x86 runners)
+3. **For OGC platform:** Should work as-is on standard x86 infrastructure
+
+**Workflow Status:** Validated up to Docker image pull. Full execution requires x86 architecture or multi-arch image rebuild.
