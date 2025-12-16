@@ -80,35 +80,6 @@ def _(STUDY_SITES, site_dropdown):
 
 
 @app.cell(hide_code=True)
-def _(selected_site, site_info):
-    def _():
-        center_lon, center_lat = site_info["center"]
-        bounds = site_info["bounds"]
-
-        fig, ax = plt.subplots(figsize=(8, 6))
-
-        # Draw bounding box
-        bbox_lons = [bounds["west"], bounds["east"], bounds["east"], bounds["west"], bounds["west"]]
-        bbox_lats = [bounds["south"], bounds["south"], bounds["north"], bounds["north"], bounds["south"]]
-        ax.plot(bbox_lons, bbox_lats, 'r-', linewidth=2, label="Study Area")
-        ax.fill(bbox_lons, bbox_lats, alpha=0.2, color='red')
-
-        # Mark center
-        ax.plot(center_lon, center_lat, 'r*', markersize=15, label="Center")
-
-        ax.set_xlabel("Longitude")
-        ax.set_ylabel("Latitude")
-        ax.set_title(f"{selected_site}")
-        ax.grid(True, alpha=0.3)
-        ax.set_aspect('equal')
-        plt.tight_layout()
-        plt.show()
-
-    _()
-    return
-
-
-@app.cell(hide_code=True)
 def _():
     mo.md(r"""Now configure the satellite data search:""")
     return
@@ -229,6 +200,44 @@ def _(
 
     print(f"Data shape: {sentinel2_data.shape}")
     return (sentinel2_data,)
+
+
+@app.cell(hide_code=True)
+def _():
+    mo.md(r"""Let's visualize the loaded satellite bands:""")
+    return
+
+
+@app.cell(hide_code=True)
+def _(sentinel2_data):
+    def _():
+        # Extract bands for visualization
+        if "time" in sentinel2_data.dims:
+            nir_vis = sentinel2_data.sel(band="nir").isel(time=0).values
+            red_vis = sentinel2_data.sel(band="red").isel(time=0).values
+        else:
+            nir_vis = sentinel2_data.sel(band="nir").values
+            red_vis = sentinel2_data.sel(band="red").values
+
+        plt.figure(figsize=(16, 6))
+
+        ax1 = plt.subplot(1, 2, 1)
+        ax1.set_title("NIR Band (Vegetation Health)")
+        im1 = ax1.imshow(nir_vis, cmap="turbo")
+        plt.colorbar(im1, ax=ax1, shrink=0.8)
+        ax1.axis("off")
+
+        ax2 = plt.subplot(1, 2, 2)
+        ax2.set_title("Red Band (Vegetation Stress)")
+        im2 = ax2.imshow(red_vis, cmap="turbo")
+        plt.colorbar(im2, ax=ax2, shrink=0.8)
+        ax2.axis("off")
+
+        plt.tight_layout()
+        plt.show()
+
+    _()
+    return
 
 
 @app.cell(hide_code=True)
@@ -367,14 +376,24 @@ def _(mangrove_mask, ndvi, np):
 
 
 @app.cell(hide_code=True)
-def _(biomass, plt):
+def _(biomass, ndvi, plt):
     def _():
-        plt.figure(figsize=(10, 8))
-        ax = plt.subplot(1, 1, 1)
-        ax.set_title("Biomass Distribution (Mg/ha)")
-        im = ax.imshow(biomass, cmap="viridis", vmin=0, vmax=150)
-        plt.colorbar(im, ax=ax, label="Mg/ha", shrink=0.8)
-        ax.axis("off")
+        plt.figure(figsize=(16, 6))
+
+        # Show NDVI as context
+        ax1 = plt.subplot(1, 2, 1)
+        ax1.set_title("NDVI (Full Scene)")
+        im1 = ax1.imshow(ndvi, cmap="RdYlGn", vmin=-0.2, vmax=1.0)
+        plt.colorbar(im1, ax=ax1, shrink=0.8)
+        ax1.axis("off")
+
+        # Show biomass only in mangrove areas
+        ax2 = plt.subplot(1, 2, 2)
+        ax2.set_title("Biomass in Mangrove Areas (Mg/ha)")
+        im2 = ax2.imshow(biomass, cmap="YlGn", vmin=0, vmax=150)
+        plt.colorbar(im2, ax=ax2, label="Mg/ha", shrink=0.8)
+        ax2.axis("off")
+
         plt.tight_layout()
         plt.show()
 
