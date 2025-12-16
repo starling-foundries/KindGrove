@@ -186,17 +186,18 @@ def _(
         f"Selected: {best_item.datetime.strftime('%Y-%m-%d')} ({best_item.properties.get('eo:cloud_cover', 0):.1f}% cloud)"
     )
 
-    # Check cache
+    # Check cache - key by scene ID so different dates get different cache
     cache_dir = Path("data_cache")
     cache_dir.mkdir(exist_ok=True)
+    scene_id = best_item.id  # e.g., "S2A_MSIL2A_20251205T..."
     cache_files = {
-        "red": cache_dir / "red.tif",
-        "green": cache_dir / "green.tif",
-        "nir": cache_dir / "nir.tif",
+        "red": cache_dir / f"{scene_id}_red.tif",
+        "green": cache_dir / f"{scene_id}_green.tif",
+        "nir": cache_dir / f"{scene_id}_nir.tif",
     }
 
     if all(f.exists() for f in cache_files.values()):
-        print("Loading from cache...")
+        print(f"Loading from cache ({scene_id})...")
         bands_data = {}
         for band_name, filepath in cache_files.items():
             with rioxarray.open_rasterio(filepath) as src:
