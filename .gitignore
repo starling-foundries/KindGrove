@@ -43,9 +43,12 @@ outputs/
 results/
 mangrove_workflow_preview.html
 
-# STAC data capture (reference data - keep in git)
-!stac_data_capture/
-!stac_data_capture/*.json
+# Debug/intermediate data (not for version control)
+stac_data_capture/
+__marimo__/
+capture_stac_data.py
+mangrove_assessment_results.json
+STAC_DATA_FLOW.json
 
 # Development scripts and intermediate work
 add_visual_confirmation.py
