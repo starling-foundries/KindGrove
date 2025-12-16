@@ -12,12 +12,9 @@ with app.setup(hide_code=True):
     import matplotlib.pyplot as plt
     import numpy as np
     import pandas as pd
-    import plotly.express as px
-    import plotly.graph_objects as go
     import rioxarray
     import stackstac
     import xarray as xr
-    from plotly.subplots import make_subplots
     from pystac_client import Client
 
     warnings.filterwarnings("ignore")
@@ -83,50 +80,29 @@ def _(STUDY_SITES, site_dropdown):
 
 
 @app.cell(hide_code=True)
-def _(go, selected_site, site_info):
+def _(selected_site, site_info):
     def _():
         center_lon, center_lat = site_info["center"]
         bounds = site_info["bounds"]
 
-        bbox_coords = [
-            [bounds["west"], bounds["south"]],
-            [bounds["east"], bounds["south"]],
-            [bounds["east"], bounds["north"]],
-            [bounds["west"], bounds["north"]],
-            [bounds["west"], bounds["south"]],
-        ]
+        fig, ax = plt.subplots(figsize=(8, 6))
 
-        fig = go.Figure()
-        fig.add_trace(
-            go.Scattermap(
-                mode="lines",
-                lon=[c[0] for c in bbox_coords],
-                lat=[c[1] for c in bbox_coords],
-                line=dict(width=3, color="red"),
-                name="Study Area",
-            )
-        )
-        fig.add_trace(
-            go.Scattermap(
-                mode="markers",
-                lon=[center_lon],
-                lat=[center_lat],
-                marker=dict(size=15, color="red", symbol="star"),
-                name="Center",
-            )
-        )
-        fig.update_layout(
-            mapbox=dict(
-                style="open-street-map",
-                center=dict(lon=center_lon, lat=center_lat),
-                zoom=11,
-            ),
-            height=400,
-            title=dict(text=f"{selected_site}", x=0.5),
-            margin=dict(l=0, r=0, t=40, b=0),
-            showlegend=False,
-        )
-        return mo.ui.plotly(fig)
+        # Draw bounding box
+        bbox_lons = [bounds["west"], bounds["east"], bounds["east"], bounds["west"], bounds["west"]]
+        bbox_lats = [bounds["south"], bounds["south"], bounds["north"], bounds["north"], bounds["south"]]
+        ax.plot(bbox_lons, bbox_lats, 'r-', linewidth=2, label="Study Area")
+        ax.fill(bbox_lons, bbox_lats, alpha=0.2, color='red')
+
+        # Mark center
+        ax.plot(center_lon, center_lat, 'r*', markersize=15, label="Center")
+
+        ax.set_xlabel("Longitude")
+        ax.set_ylabel("Latitude")
+        ax.set_title(f"{selected_site}")
+        ax.grid(True, alpha=0.3)
+        ax.set_aspect('equal')
+        plt.tight_layout()
+        plt.show()
 
     _()
     return
@@ -428,19 +404,16 @@ def _(biomass, plt):
 
 
 @app.cell(hide_code=True)
-def _(go, valid_biomass):
+def _(valid_biomass):
     def _():
-        fig = go.Figure()
-        fig.add_trace(
-            go.Histogram(x=valid_biomass, nbinsx=30, marker_color="green", opacity=0.7)
-        )
-        fig.update_layout(
-            title="Biomass Distribution",
-            xaxis_title="Biomass (Mg/ha)",
-            yaxis_title="Pixel Count",
-            height=300,
-        )
-        return mo.ui.plotly(fig)
+        fig, ax = plt.subplots(figsize=(10, 4))
+        ax.hist(valid_biomass, bins=30, color="green", alpha=0.7, edgecolor="darkgreen")
+        ax.set_xlabel("Biomass (Mg/ha)")
+        ax.set_ylabel("Pixel Count")
+        ax.set_title("Biomass Distribution")
+        ax.grid(True, alpha=0.3)
+        plt.tight_layout()
+        plt.show()
 
     _()
     return
