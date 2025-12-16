@@ -39,11 +39,16 @@ data_cache/
 
 # Outputs and intermediate results
 *.csv
-*.json
-outputs/*.png
-outputs/*.jpg
-results/*.csv
+outputs/
+results/
 mangrove_workflow_preview.html
+
+# Debug/intermediate data (not for version control)
+stac_data_capture/
+__marimo__/
+capture_stac_data.py
+mangrove_assessment_results.json
+STAC_DATA_FLOW.json
 
 # Development scripts and intermediate work
 add_visual_confirmation.py
