@@ -122,9 +122,8 @@ def _():
     days_back = mo.ui.slider(
         30, 365, value=90, step=30, label="Days Back:", show_value=True
     )
-    load_button = mo.ui.run_button(label="Search & Load Data")
-    mo.vstack([cloud_cover, days_back, load_button])
-    return cloud_cover, days_back, load_button
+    mo.vstack([cloud_cover, days_back])
+    return cloud_cover, days_back
 
 
 @app.cell(hide_code=True)
@@ -150,7 +149,6 @@ def _(
     cloud_cover,
     datetime,
     days_back,
-    load_button,
     np,
     rioxarray,
     site_info,
@@ -158,8 +156,6 @@ def _(
     timedelta,
     xr,
 ):
-    mo.stop(not load_button.value, mo.md("Click button to search and load data"))
-
     # Search STAC catalog
     print("Searching AWS STAC catalog...")
     catalog = Client.open("https://earth-search.aws.element84.com/v1")
@@ -252,18 +248,9 @@ def _():
     return
 
 
-@app.cell(hide_code=True)
-def _(load_button):
-    mo.stop(not load_button.value, "")
-    detect_button = mo.ui.run_button(label="Detect Mangroves")
-    detect_button
-    return (detect_button,)
-
-
 @app.cell
-def _(detect_button, np, sentinel2_data):
+def _(np, sentinel2_data):
     # Core science: vegetation index calculation
-    mo.stop(not detect_button.value, mo.md("Click button to detect mangroves"))
 
     # Extract bands
     if "time" in sentinel2_data.dims:
@@ -337,18 +324,9 @@ def _():
     return
 
 
-@app.cell(hide_code=True)
-def _(detect_button):
-    mo.stop(not detect_button.value, "")
-    estimate_button = mo.ui.run_button(label="Estimate Biomass")
-    estimate_button
-    return (estimate_button,)
-
-
 @app.cell
-def _(estimate_button, mangrove_mask, ndvi, np):
+def _(mangrove_mask, ndvi, np):
     # Core science: biomass estimation
-    mo.stop(not estimate_button.value, mo.md("Click button to estimate biomass"))
 
     # Allometric model from Southeast Asian mangrove studies
     biomass = 250.5 * ndvi - 75.2
@@ -430,15 +408,12 @@ def _(
     carbon_stock,
     co2_equivalent,
     datetime,
-    estimate_button,
     mangrove_area_ha,
     mean_biomass,
     pd,
     selected_site,
     total_biomass,
 ):
-    mo.stop(not estimate_button.value, "")
-
     summary_df = pd.DataFrame(
         [
             {"Metric": "Study Site", "Value": selected_site},
@@ -456,17 +431,11 @@ def _(
 
 
 @app.cell(hide_code=True)
-def _(estimate_button, selected_site, summary_df):
-    mo.stop(not estimate_button.value, "")
-
-    export_button = mo.ui.run_button(label="Export Results")
-
-    if export_button.value:
-        csv_filename = f"{selected_site.replace(' ', '_')}_summary.csv"
-        summary_df.to_csv(csv_filename, index=False)
-        print(f"Saved: {csv_filename}")
-
-    export_button
+def _(selected_site, summary_df):
+    # Export results to CSV
+    csv_filename = f"{selected_site.replace(' ', '_')}_summary.csv"
+    summary_df.to_csv(csv_filename, index=False)
+    print(f"Saved: {csv_filename}")
     return
 
 
