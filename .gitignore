@@ -39,11 +39,8 @@ data_cache/
 
 # Outputs and intermediate results
 *.csv
-outputs/*.json
-results/*.json
-outputs/*.png
-outputs/*.jpg
-results/*.csv
+outputs/
+results/
 mangrove_workflow_preview.html
 
 # STAC data capture (reference data - keep in git)
