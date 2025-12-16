@@ -274,25 +274,24 @@ def _(sentinel2_data):
     print(f"SAVI range: {np.nanmin(savi):.3f} to {np.nanmax(savi):.3f}")
 
     # Detect mangroves using threshold classification
-    # Mangroves: high NDVI (green vegetation), negative NDWI (dense canopy reflects NIR strongly)
-    # NDWI threshold relaxed from -0.3 to -0.8 because dense vegetation has very negative NDWI
-    mangrove_mask = ((ndvi > 0.3) & (ndvi < 0.95) & (ndwi > -0.8) & (savi > 0.2)).astype(
-        float
-    )
+    # Simplified: use NDVI-based detection for dense vegetation
+    # Water has negative NDVI, vegetation has positive NDVI
+    # High NDVI (>0.4) indicates healthy dense vegetation (potential mangroves)
+    mangrove_mask = ((ndvi > 0.4) & (ndvi < 0.95)).astype(float)
 
     # Statistics
     pixel_area_m2 = 10 * 10  # 10m resolution
     mangrove_pixels = np.sum(mangrove_mask)
     mangrove_area_ha = (mangrove_pixels * pixel_area_m2) / 10000
 
-    print(f"Detection: NDVI>0.3 & NDVI<0.95 & NDWI>-0.8 & SAVI>0.2")
+    print(f"Detection: NDVI>0.4 & NDVI<0.95 (simplified vegetation detection)")
     print(f"Mangrove pixels: {int(mangrove_pixels)}")
     print(f"Mangrove area: {mangrove_area_ha:.1f} hectares")
     return mangrove_area_ha, mangrove_mask, ndvi, ndwi
 
 
 @app.cell(hide_code=True)
-def _(mangrove_mask, ndvi, ndwi):
+def _(mangrove_mask, ndvi, ndwi, np):
     def _():
         plt.figure(figsize=(16, 10))
 
@@ -309,20 +308,20 @@ def _(mangrove_mask, ndvi, ndwi):
         ax2.axis("off")
 
         ax3 = plt.subplot(2, 2, 3)
-        ax3.set_title("Mangrove Detection (NDVI>0.3 & NDWI>-0.8)")
+        ax3.set_title("Vegetation Detection (NDVI > 0.4)")
         im3 = ax3.imshow(mangrove_mask, cmap="Greens", vmin=0, vmax=1)
         plt.colorbar(im3, ax=ax3, shrink=0.8)
         ax3.axis("off")
 
-        # Show what passes each threshold
+        # Show NDVI histogram to understand the data distribution
         ax4 = plt.subplot(2, 2, 4)
-        ax4.set_title("Detection Breakdown")
-        passes_ndvi = (ndvi > 0.3) & (ndvi < 0.95)
-        passes_ndwi = ndwi > -0.8
-        combined = passes_ndvi & passes_ndwi
-        im4 = ax4.imshow(combined.astype(float), cmap="Greens", vmin=0, vmax=1)
-        plt.colorbar(im4, ax=ax4, shrink=0.8)
-        ax4.axis("off")
+        ax4.set_title("NDVI Histogram")
+        valid_ndvi = ndvi[~np.isnan(ndvi)].flatten()
+        ax4.hist(valid_ndvi, bins=50, color="green", alpha=0.7, edgecolor="darkgreen")
+        ax4.axvline(x=0.4, color="red", linestyle="--", label="Threshold (0.4)")
+        ax4.set_xlabel("NDVI")
+        ax4.set_ylabel("Pixel Count")
+        ax4.legend()
 
         plt.tight_layout()
         plt.show()
