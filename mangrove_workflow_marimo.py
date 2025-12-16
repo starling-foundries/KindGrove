@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.14.0"
+__generated_with = "0.18.4"
 app = marimo.App(width="medium")
 
 with app.setup(hide_code=True):
@@ -22,20 +22,20 @@ with app.setup(hide_code=True):
 
 @app.cell(hide_code=True)
 def _():
-    mo.md(
-        r"""
+    mo.md(r"""
     # Mangrove Monitoring Workflow
 
     This notebook detects mangroves and estimates biomass from Sentinel-2 satellite imagery.
     All data is open access from ESA/AWS - no API keys required.
-    """
-    )
+    """)
     return
 
 
 @app.cell(hide_code=True)
 def _():
-    mo.md(r"""First, let's define our study sites:""")
+    mo.md(r"""
+    First, let's define our study sites:
+    """)
     return
 
 
@@ -54,7 +54,9 @@ def _():
 
 @app.cell(hide_code=True)
 def _():
-    mo.md(r"""Select a study site:""")
+    mo.md(r"""
+    Select a study site:
+    """)
     return
 
 
@@ -81,7 +83,9 @@ def _(STUDY_SITES, site_dropdown):
 
 @app.cell(hide_code=True)
 def _():
-    mo.md(r"""Now configure the satellite data search:""")
+    mo.md(r"""
+    Now configure the satellite data search:
+    """)
     return
 
 
@@ -99,8 +103,7 @@ def _():
 
 @app.cell(hide_code=True)
 def _():
-    mo.md(
-        r"""
+    mo.md(r"""
     We search the AWS STAC catalog for Sentinel-2 L2A imagery:
 
     | Band | Wavelength | Resolution | Use |
@@ -108,25 +111,12 @@ def _():
     | Red (B04) | 665 nm | 10m | Vegetation stress |
     | Green (B03) | 560 nm | 10m | Water index |
     | NIR (B08) | 842 nm | 10m | Vegetation health |
-    """
-    )
+    """)
     return
 
 
 @app.cell
-def _(
-    Client,
-    Path,
-    cloud_cover,
-    datetime,
-    days_back,
-    np,
-    rioxarray,
-    site_info,
-    stackstac,
-    timedelta,
-    xr,
-):
+def _(cloud_cover, days_back, site_info):
     # Search STAC catalog
     print("Searching AWS STAC catalog...")
     catalog = Client.open("https://earth-search.aws.element84.com/v1")
@@ -204,7 +194,9 @@ def _(
 
 @app.cell(hide_code=True)
 def _():
-    mo.md(r"""Let's visualize the loaded satellite bands:""")
+    mo.md(r"""
+    Let's visualize the loaded satellite bands:
+    """)
     return
 
 
@@ -242,8 +234,7 @@ def _(sentinel2_data):
 
 @app.cell(hide_code=True)
 def _():
-    mo.md(
-        r"""
+    mo.md(r"""
     Now we detect mangroves using vegetation indices:
 
     | Index | Formula | Interpretation |
@@ -253,13 +244,12 @@ def _():
     | SAVI | (NIR - Red) / (NIR + Red + L) × (1 + L) | Soil-adjusted vegetation |
 
     Mangroves are identified where: **NDVI > 0.3**, **NDWI > -0.3**, and **SAVI > 0.2**
-    """
-    )
+    """)
     return
 
 
 @app.cell
-def _(np, sentinel2_data):
+def _(sentinel2_data):
     # Core science: vegetation index calculation
 
     # Extract bands
@@ -278,8 +268,15 @@ def _(np, sentinel2_data):
     L = 0.5
     savi = ((nir - red) / (nir + red + L)) * (1 + L)
 
+    # Debug: show actual index ranges
+    print(f"NDVI range: {np.nanmin(ndvi):.3f} to {np.nanmax(ndvi):.3f}")
+    print(f"NDWI range: {np.nanmin(ndwi):.3f} to {np.nanmax(ndwi):.3f}")
+    print(f"SAVI range: {np.nanmin(savi):.3f} to {np.nanmax(savi):.3f}")
+
     # Detect mangroves using threshold classification
-    mangrove_mask = ((ndvi > 0.3) & (ndvi < 0.9) & (ndwi > -0.3) & (savi > 0.2)).astype(
+    # Mangroves: high NDVI (green vegetation), negative NDWI (dense canopy reflects NIR strongly)
+    # NDWI threshold relaxed from -0.3 to -0.8 because dense vegetation has very negative NDWI
+    mangrove_mask = ((ndvi > 0.3) & (ndvi < 0.95) & (ndwi > -0.8) & (savi > 0.2)).astype(
         float
     )
 
@@ -288,28 +285,44 @@ def _(np, sentinel2_data):
     mangrove_pixels = np.sum(mangrove_mask)
     mangrove_area_ha = (mangrove_pixels * pixel_area_m2) / 10000
 
-    print(f"NDVI range: {ndvi.min():.2f} to {ndvi.max():.2f}")
+    print(f"Detection: NDVI>0.3 & NDVI<0.95 & NDWI>-0.8 & SAVI>0.2")
     print(f"Mangrove pixels: {int(mangrove_pixels)}")
     print(f"Mangrove area: {mangrove_area_ha:.1f} hectares")
-    return mangrove_area_ha, mangrove_mask, ndvi
+    return mangrove_area_ha, mangrove_mask, ndvi, ndwi
 
 
 @app.cell(hide_code=True)
-def _(mangrove_mask, ndvi, plt):
+def _(mangrove_mask, ndvi, ndwi):
     def _():
-        plt.figure(figsize=(14, 5))
+        plt.figure(figsize=(16, 10))
 
-        ax1 = plt.subplot(1, 2, 1)
-        ax1.set_title("NDVI")
+        ax1 = plt.subplot(2, 2, 1)
+        ax1.set_title("NDVI (Vegetation Greenness)")
         im1 = ax1.imshow(ndvi, cmap="RdYlGn", vmin=-0.2, vmax=1.0)
         plt.colorbar(im1, ax=ax1, shrink=0.8)
         ax1.axis("off")
 
-        ax2 = plt.subplot(1, 2, 2)
-        ax2.set_title("Mangrove Detection")
-        im2 = ax2.imshow(mangrove_mask, cmap="Greens")
+        ax2 = plt.subplot(2, 2, 2)
+        ax2.set_title("NDWI (Water Content)")
+        im2 = ax2.imshow(ndwi, cmap="RdBu", vmin=-1.0, vmax=1.0)
         plt.colorbar(im2, ax=ax2, shrink=0.8)
         ax2.axis("off")
+
+        ax3 = plt.subplot(2, 2, 3)
+        ax3.set_title("Mangrove Detection (NDVI>0.3 & NDWI>-0.8)")
+        im3 = ax3.imshow(mangrove_mask, cmap="Greens", vmin=0, vmax=1)
+        plt.colorbar(im3, ax=ax3, shrink=0.8)
+        ax3.axis("off")
+
+        # Show what passes each threshold
+        ax4 = plt.subplot(2, 2, 4)
+        ax4.set_title("Detection Breakdown")
+        passes_ndvi = (ndvi > 0.3) & (ndvi < 0.95)
+        passes_ndwi = ndwi > -0.8
+        combined = passes_ndvi & passes_ndwi
+        im4 = ax4.imshow(combined.astype(float), cmap="Greens", vmin=0, vmax=1)
+        plt.colorbar(im4, ax=ax4, shrink=0.8)
+        ax4.axis("off")
 
         plt.tight_layout()
         plt.show()
@@ -320,8 +333,7 @@ def _(mangrove_mask, ndvi, plt):
 
 @app.cell(hide_code=True)
 def _():
-    mo.md(
-        r"""
+    mo.md(r"""
     Now we estimate biomass using an allometric equation from Southeast Asian mangrove studies:
 
     **Biomass (Mg/ha) = 250.5 × NDVI - 75.2**
@@ -329,13 +341,12 @@ def _():
     Carbon accounting:
     - Carbon fraction: 47% of biomass
     - CO₂ conversion: 3.67 × carbon mass
-    """
-    )
+    """)
     return
 
 
 @app.cell
-def _(mangrove_mask, ndvi, np):
+def _(mangrove_mask, ndvi):
     # Core science: biomass estimation
 
     # Allometric model from Southeast Asian mangrove studies
@@ -376,7 +387,7 @@ def _(mangrove_mask, ndvi, np):
 
 
 @app.cell(hide_code=True)
-def _(biomass, ndvi, plt):
+def _(biomass, ndvi):
     def _():
         plt.figure(figsize=(16, 6))
 
@@ -419,7 +430,9 @@ def _(valid_biomass):
 
 @app.cell(hide_code=True)
 def _():
-    mo.md(r"""Finally, let's create a summary table:""")
+    mo.md(r"""
+    Finally, let's create a summary table:
+    """)
     return
 
 
@@ -427,10 +440,8 @@ def _():
 def _(
     carbon_stock,
     co2_equivalent,
-    datetime,
     mangrove_area_ha,
     mean_biomass,
-    pd,
     selected_site,
     total_biomass,
 ):
