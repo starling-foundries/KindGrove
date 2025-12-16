@@ -47,7 +47,29 @@ def _():
             "bounds": {"west": 95.15, "east": 95.35, "south": 15.9, "north": 16.1},
             "country": "Myanmar",
             "description": "1,800 acres of mangrove restoration in Ayeyarwady Delta",
-        }
+            "published_agc": None,
+        },
+        "Can Gio Biosphere Reserve": {
+            "center": (106.89, 10.52),
+            "bounds": {"west": 106.73, "east": 107.05, "south": 10.35, "north": 10.68},
+            "country": "Vietnam",
+            "description": "UNESCO Biosphere Reserve, 75,740 ha with consistent monitoring",
+            "published_agc": "Fringe: 102±24.7, Transition: 298.1±14.1, Interior: 243.6±40.4 Mg C/ha",
+        },
+        "Sundarbans": {
+            "center": (89.46, 22.0),
+            "bounds": {"west": 89.0, "east": 89.92, "south": 21.5, "north": 22.5},
+            "country": "Bangladesh/India",
+            "description": "World's largest mangrove forest, varies by salinity zone",
+            "published_agc": "24-119 Mg C/ha (salinity dependent), Mean AGB: 243.4 Mg/ha",
+        },
+        "Wunbaik Reserved Forest": {
+            "center": (94.5, 16.75),
+            "bounds": {"west": 94.3, "east": 94.7, "south": 16.6, "north": 16.9},
+            "country": "Myanmar (Rakhine State)",
+            "description": "Source region for biomass equation (250.5×NDVI - 75.2)",
+            "published_agc": "Equation source: R²=0.72 (⚠️ citation unverified)",
+        },
     }
     return (STUDY_SITES,)
 
@@ -77,7 +99,10 @@ def _(STUDY_SITES, site_dropdown):
     site_info = STUDY_SITES[selected_site]
     print(f"Selected: {selected_site}")
     print(f"Location: {site_info['country']}")
+    print(f"Description: {site_info['description']}")
     print(f"Bounds: {site_info['bounds']}")
+    if site_info.get("published_agc"):
+        print(f"Published AGC: {site_info['published_agc']}")
     return selected_site, site_info
 
 
@@ -333,13 +358,20 @@ def _(mangrove_mask, ndvi, ndwi, np):
 @app.cell(hide_code=True)
 def _():
     mo.md(r"""
-    Now we estimate biomass using an allometric equation from Southeast Asian mangrove studies:
+    Now we estimate biomass using an allometric equation:
 
-    **Biomass (Mg/ha) = 250.5 × NDVI - 75.2**
+    **Biomass (Mg/ha) = 250.5 × NDVI - 75.2** (R² = 0.72)
 
-    Carbon accounting:
-    - Carbon fraction: 47% of biomass
-    - CO₂ conversion: 3.67 × carbon mass
+    | Parameter | Value | Source |
+    |-----------|-------|--------|
+    | Slope | 250.5 | Wunbaik Forest, Myanmar |
+    | Intercept | -75.2 | Regional calibration |
+    | Carbon fraction | 47% | IPCC 2006 Guidelines |
+    | CO₂/C ratio | 3.67 | Molecular weight (44/12) |
+
+    ⚠️ **Note**: The biomass equation coefficients are from Myanmar mangrove studies.
+    Primary citation unverified - may be from regional literature or unpublished data.
+    For validated results, compare against published AGC values shown for each site.
     """)
     return
 
