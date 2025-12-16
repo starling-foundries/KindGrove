@@ -3,11 +3,22 @@ import marimo
 __generated_with = "0.14.0"
 app = marimo.App(width="medium")
 
-# All imports in hidden setup block
 with app.setup(hide_code=True):
     import warnings
+    from datetime import datetime, timedelta
+    from pathlib import Path
 
     import marimo as mo
+    import matplotlib.pyplot as plt
+    import numpy as np
+    import pandas as pd
+    import plotly.express as px
+    import plotly.graph_objects as go
+    import rioxarray
+    import stackstac
+    import xarray as xr
+    from plotly.subplots import make_subplots
+    from pystac_client import Client
 
     warnings.filterwarnings("ignore")
 
@@ -16,11 +27,11 @@ with app.setup(hide_code=True):
 def _():
     mo.md(
         r"""
-        # Mangrove Monitoring Workflow
+    # Mangrove Monitoring Workflow
 
-        This notebook detects mangroves and estimates biomass from Sentinel-2 satellite imagery.
-        All data is open access from ESA/AWS - no API keys required.
-        """
+    This notebook detects mangroves and estimates biomass from Sentinel-2 satellite imagery.
+    All data is open access from ESA/AWS - no API keys required.
+    """
     )
     return
 
@@ -144,14 +155,14 @@ def _():
 def _():
     mo.md(
         r"""
-        We search the AWS STAC catalog for Sentinel-2 L2A imagery:
+    We search the AWS STAC catalog for Sentinel-2 L2A imagery:
 
-        | Band | Wavelength | Resolution | Use |
-        |------|------------|------------|-----|
-        | Red (B04) | 665 nm | 10m | Vegetation stress |
-        | Green (B03) | 560 nm | 10m | Water index |
-        | NIR (B08) | 842 nm | 10m | Vegetation health |
-        """
+    | Band | Wavelength | Resolution | Use |
+    |------|------------|------------|-----|
+    | Red (B04) | 665 nm | 10m | Vegetation stress |
+    | Green (B03) | 560 nm | 10m | Water index |
+    | NIR (B08) | 842 nm | 10m | Vegetation health |
+    """
     )
     return
 
@@ -165,7 +176,6 @@ def _(
     days_back,
     load_button,
     np,
-    pd,
     rioxarray,
     site_info,
     stackstac,
@@ -252,16 +262,16 @@ def _(
 def _():
     mo.md(
         r"""
-        Now we detect mangroves using vegetation indices:
+    Now we detect mangroves using vegetation indices:
 
-        | Index | Formula | Interpretation |
-        |-------|---------|----------------|
-        | NDVI | (NIR - Red) / (NIR + Red) | Vegetation greenness |
-        | NDWI | (Green - NIR) / (Green + NIR) | Water content |
-        | SAVI | (NIR - Red) / (NIR + Red + L) × (1 + L) | Soil-adjusted vegetation |
+    | Index | Formula | Interpretation |
+    |-------|---------|----------------|
+    | NDVI | (NIR - Red) / (NIR + Red) | Vegetation greenness |
+    | NDWI | (Green - NIR) / (Green + NIR) | Water content |
+    | SAVI | (NIR - Red) / (NIR + Red + L) × (1 + L) | Soil-adjusted vegetation |
 
-        Mangroves are identified where: **NDVI > 0.3**, **NDWI > -0.3**, and **SAVI > 0.2**
-        """
+    Mangroves are identified where: **NDVI > 0.3**, **NDWI > -0.3**, and **SAVI > 0.2**
+    """
     )
     return
 
@@ -308,7 +318,7 @@ def _(detect_button, np, sentinel2_data):
     print(f"NDVI range: {ndvi.min():.2f} to {ndvi.max():.2f}")
     print(f"Mangrove pixels: {int(mangrove_pixels)}")
     print(f"Mangrove area: {mangrove_area_ha:.1f} hectares")
-    return mangrove_mask, ndvi, mangrove_area_ha
+    return mangrove_area_ha, mangrove_mask, ndvi
 
 
 @app.cell(hide_code=True)
@@ -339,14 +349,14 @@ def _(mangrove_mask, ndvi, plt):
 def _():
     mo.md(
         r"""
-        Now we estimate biomass using an allometric equation from Southeast Asian mangrove studies:
+    Now we estimate biomass using an allometric equation from Southeast Asian mangrove studies:
 
-        **Biomass (Mg/ha) = 250.5 × NDVI - 75.2**
+    **Biomass (Mg/ha) = 250.5 × NDVI - 75.2**
 
-        Carbon accounting:
-        - Carbon fraction: 47% of biomass
-        - CO₂ conversion: 3.67 × carbon mass
-        """
+    Carbon accounting:
+    - Carbon fraction: 47% of biomass
+    - CO₂ conversion: 3.67 × carbon mass
+    """
     )
     return
 
@@ -393,11 +403,11 @@ def _(estimate_button, mangrove_mask, ndvi, np):
     print(f"CO2 equivalent: {co2_equivalent:,.0f} Mg CO2")
     return (
         biomass,
-        valid_biomass,
-        mean_biomass,
-        total_biomass,
         carbon_stock,
         co2_equivalent,
+        mean_biomass,
+        total_biomass,
+        valid_biomass,
     )
 
 
@@ -473,7 +483,7 @@ def _(
 
 
 @app.cell(hide_code=True)
-def _(estimate_button, np, selected_site, summary_df):
+def _(estimate_button, selected_site, summary_df):
     mo.stop(not estimate_button.value, "")
 
     export_button = mo.ui.run_button(label="Export Results")
