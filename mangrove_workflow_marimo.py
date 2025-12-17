@@ -291,8 +291,7 @@ def _(
             bbox=_bbox,
             datetime=f"{_start_str}/{_end_str}",
             query={"eo:cloud_cover": {"lt": max_cloud_cover.value}},
-            sortby=[{"field": "eo:cloud_cover", "direction": "asc"}],
-            limit=1,
+            limit=10,
         )
 
         _items = list(_search.items())
@@ -300,6 +299,8 @@ def _(
             print("no scenes")
             continue
 
+        # Select item with lowest cloud cover (sort client-side)
+        _items.sort(key=lambda x: x.properties.get("eo:cloud_cover", 100))
         _item = _items[0]
         _scene_id = _item.id
         _scene_date = _item.datetime
