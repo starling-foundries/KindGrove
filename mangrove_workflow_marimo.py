@@ -204,31 +204,23 @@ def _():
 
 @app.cell(hide_code=True)
 def _():
-    start_year = mo.ui.slider(
-        2017, 2024, value=2017, step=1, label="Start Year:", show_value=True
-    )
-    end_year = mo.ui.slider(
-        2017, 2024, value=2024, step=1, label="End Year:", show_value=True
-    )
     max_cloud_cover = mo.ui.slider(
-        10, 50, value=20, step=5, label="Max Cloud Cover (%):", show_value=True
+        10, 50, value=30, step=5, label="Max Cloud Cover (%):", show_value=True
     )
-    mo.vstack([start_year, end_year, max_cloud_cover])
-    return end_year, max_cloud_cover, start_year
+    max_cloud_cover  # noqa: B018
+    return (max_cloud_cover,)
 
 
 @app.cell(hide_code=True)
 def _():
     mo.md(
         r"""
-    Temporal sampling will query the AWS STAC catalog for ~20 Sentinel-2 L2A scenes
-    distributed across the selected time range (2-3 scenes per year, preferring low cloud cover).
+    Temporal analysis samples **3 key points** from Sentinel-2's operational history:
+    - **Initial** (2017): First available low-cloud scene
+    - **Midpoint** (2020-2021): Mid-operational baseline
+    - **Current** (2024): Most recent measurement
 
-    | Band | Wavelength | Resolution | Use |
-    |------|------------|------------|-----|
-    | Red (B04) | 665 nm | 10m | Vegetation stress |
-    | Green (B03) | 560 nm | 10m | Water index |
-    | NIR (B08) | 842 nm | 10m | Vegetation health |
+    This enables quick change detection (~2-3 min) while capturing the full trend.
     """
     )
     return
@@ -236,37 +228,31 @@ def _():
 
 @app.cell(hide_code=True)
 def _():
-    load_temporal_button = mo.ui.run_button(
-        label="🛰️ Load Temporal Data (~10-20 min first run)"
-    )
+    load_temporal_button = mo.ui.run_button(label="🛰️ Load Temporal Data (~2-3 min)")
     load_temporal_button  # noqa: B018
     return (load_temporal_button,)
 
 
 @app.cell
 def _(
-    end_year,
     load_temporal_button,
     max_cloud_cover,
     selected_site,
     site_info,
-    start_year,
 ):
     mo.stop(
         not load_temporal_button.value,
         mo.md("*Click 'Load Temporal Data' to begin temporal analysis*"),
     )
 
-    # Generate time windows (2 per year for dry season sampling)
-    _time_windows = []
-    for _year in range(start_year.value, end_year.value + 1):
-        # Early dry season (Jan-Feb) and late dry season (Nov-Dec)
-        _time_windows.append((f"{_year}-01-01", f"{_year}-02-28"))
-        _time_windows.append((f"{_year}-11-01", f"{_year}-12-31"))
+    # 3 strategic time windows: Initial, Midpoint, Current
+    _time_windows = [
+        ("Initial (2017)", "2017-01-01", "2017-12-31"),
+        ("Midpoint (2020-21)", "2020-06-01", "2021-06-01"),
+        ("Current (2024)", "2024-01-01", "2024-12-31"),
+    ]
 
-    print(
-        f"Querying {len(_time_windows)} time windows from {start_year.value} to {end_year.value}..."
-    )
+    print("Querying 3 key time points for change detection...")
 
     # Setup
     _catalog = Client.open("https://earth-search.aws.element84.com/v1")
@@ -280,11 +266,8 @@ def _(
 
     _temporal_samples = []
 
-    for _i, (_start_str, _end_str) in enumerate(_time_windows):
-        print(
-            f"  [{_i+1}/{len(_time_windows)}] Searching {_start_str} to {_end_str}...",
-            end=" ",
-        )
+    for _i, (_label, _start_str, _end_str) in enumerate(_time_windows):
+        print(f"  [{_i+1}/3] {_label}: Searching...", end=" ")
 
         _search = _catalog.search(
             collections=["sentinel-2-l2a"],
