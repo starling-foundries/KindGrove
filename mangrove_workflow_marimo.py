@@ -234,12 +234,7 @@ def _():
 
 
 @app.cell
-def _(
-    load_temporal_button,
-    max_cloud_cover,
-    selected_site,
-    site_info,
-):
+def _(load_temporal_button, max_cloud_cover, selected_site, site_info):
     mo.stop(
         not load_temporal_button.value,
         mo.md("*Click 'Load Temporal Data' to begin temporal analysis*"),
@@ -495,7 +490,7 @@ def _(selected_site, temporal_data, time_slider):
         )
         _fig.update_xaxes(showticklabels=False)
         _fig.update_yaxes(showticklabels=False)
-        _fig  # noqa: B018
+        mo.ui.plotly(_fig)
     else:
         mo.md(f"*Biomass raster not found for {_date_str}*")
     return
@@ -581,7 +576,7 @@ def _(temporal_data):
     _fig.update_yaxes(title_text="Mean Biomass (Mg/ha)", secondary_y=False)
     _fig.update_yaxes(title_text="Mangrove Area (ha)", secondary_y=True)
 
-    _fig  # noqa: B018
+    mo.ui.plotly(_fig)
     return
 
 
