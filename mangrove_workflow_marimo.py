@@ -277,28 +277,32 @@ def _(load_temporal_button, max_cloud_cover, selected_site, site_info):
             print("no scenes")
             continue
 
-        # Select item with lowest cloud cover (sort client-side)
+        # Select items with lowest cloud cover (sort client-side)
         _items.sort(key=lambda x: x.properties.get("eo:cloud_cover", 100))
-        _item = _items[0]
-        _scene_id = _item.id
-        _scene_date = _item.datetime
-        _cloud = _item.properties.get("eo:cloud_cover", 0)
-        print(f"found {_scene_date.strftime('%Y-%m-%d')} ({_cloud:.1f}% cloud)")
 
-        # Check scene cache
-        _scene_cache_dir = _cache_dir / _scene_id
-        _stats_file = _scene_cache_dir / "stats.json"
+        # Try items until we find one with valid data
+        for _item in _items[:5]:  # Try up to 5 scenes per time window
+            _scene_id = _item.id
+            _scene_date = _item.datetime
+            _cloud = _item.properties.get("eo:cloud_cover", 0)
 
-        if _stats_file.exists():
-            # Load from cache
-            with open(_stats_file) as _f:
-                _sample = json.load(_f)
-                _sample["date"] = datetime.fromisoformat(_sample["date"])
-            _temporal_samples.append(_sample)
-            print("    Loaded from cache")
-        else:
+            # Check scene cache
+            _scene_cache_dir = _cache_dir / _scene_id
+            _stats_file = _scene_cache_dir / "stats.json"
+
+            if _stats_file.exists():
+                # Load from cache
+                with open(_stats_file) as _f:
+                    _sample = json.load(_f)
+                    _sample["date"] = datetime.fromisoformat(_sample["date"])
+                _temporal_samples.append(_sample)
+                print(
+                    f"found {_scene_date.strftime('%Y-%m-%d')} ({_cloud:.1f}% cloud) [cached]"
+                )
+                break  # Found valid cached scene
+
             # Download and process
-            print("    Downloading...", end=" ")
+            print(f"trying {_scene_date.strftime('%Y-%m-%d')}...", end=" ")
             _scene_cache_dir.mkdir(parents=True, exist_ok=True)
 
             _cache_files = {
@@ -331,6 +335,15 @@ def _(load_temporal_button, max_cloud_cover, selected_site, site_info):
                     _bands_data[_band_name] = _band.values
                     _band_xr = _band.rio.write_crs("EPSG:4326")
                     _band_xr.rio.to_raster(_cache_files[_band_name], compress="lzw")
+
+            # Validate scene has enough valid data (>5% non-NaN)
+            _valid_pct = np.sum(~np.isnan(_bands_data["nir"])) / _bands_data["nir"].size
+            if _valid_pct < 0.05:
+                print(f"skipped ({_valid_pct*100:.1f}% valid)")
+                import shutil
+
+                shutil.rmtree(_scene_cache_dir, ignore_errors=True)
+                continue  # Try next scene in this time window
 
             # Calculate biomass stats
             _red = _bands_data["red"]
@@ -376,6 +389,7 @@ def _(load_temporal_button, max_cloud_cover, selected_site, site_info):
 
             _temporal_samples.append(_sample)
             print("done")
+            break  # Found valid scene, move to next time window
 
     # Sort by date
     _temporal_samples.sort(key=lambda x: x["date"])
