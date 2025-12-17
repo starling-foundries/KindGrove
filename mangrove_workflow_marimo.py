@@ -490,9 +490,9 @@ def _(selected_site, temporal_data, time_slider):
         )
         _fig.update_xaxes(showticklabels=False)
         _fig.update_yaxes(showticklabels=False)
-        mo.ui.plotly(_fig)
+        mo.output.replace(mo.ui.plotly(_fig))
     else:
-        mo.md(f"*Biomass raster not found for {_date_str}*")
+        mo.output.replace(mo.md(f"*Biomass raster not found for {_date_str}*"))
     return
 
 
