@@ -350,7 +350,8 @@ def _(load_temporal_button, max_cloud_cover, selected_site, site_info):
             _nir = _bands_data["nir"]
             _ndvi = (_nir - _red) / (_nir + _red + 1e-8)
 
-            _mangrove_mask = (_ndvi > 0.4) & (_ndvi < 0.95)
+            # Tighter NDVI range for mangroves (excludes agriculture/other forest)
+            _mangrove_mask = (_ndvi > 0.5) & (_ndvi < 0.85)
             _biomass = 250.5 * _ndvi - 75.2
             _biomass = np.where(_mangrove_mask, _biomass, np.nan)
             _biomass = np.maximum(_biomass, 0)
