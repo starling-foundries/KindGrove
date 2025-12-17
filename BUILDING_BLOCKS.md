@@ -4,8 +4,8 @@ KindGrove uses the OGC Bounding Box building block for spatial input.
 
 ## Bounding Box
 
-**Building Block:** `ogc.geo.common.data_types.bounding_box`  
-**Schema:** https://opengeospatial.github.io/bblocks/annotated-schemas/geo/common/data_types/bounding_box/schema.json  
+**Building Block:** `ogc.geo.common.data_types.bounding_box`
+**Schema:** https://opengeospatial.github.io/bblocks/annotated-schemas/geo/common/data_types/bounding_box/schema.json
 **Status:** Stable (v1.0.1)
 
 ### Format

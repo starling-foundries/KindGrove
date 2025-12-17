@@ -52,7 +52,7 @@ $graph:
     label: Mangrove Biomass Workflow
     doc: |
       Workflow for Mangrove Biomass Analysis
-        
+
       This workflow orchestrates the mangrove biomass estimation process using
       Sentinel-2 imagery. It wraps the mangrove_workflow.cwl tool to provide
       a reusable workflow for analyzing different study areas.
@@ -108,7 +108,7 @@ $graph:
           - result
 
   # The content below defines the mangrove_cli CommandLineTool
-  # It results from the mangrove_workflow_for_cwl.cwl jupyter 
+  # It results from the mangrove_workflow_for_cwl.cwl jupyter
   # notebook conversion using the ipython2cwl tool.
   - id: mangrove_cli
     arguments:
@@ -134,7 +134,7 @@ $graph:
           prefix: --days_back
         type: int
       east:
-        inputBinding: 
+        inputBinding:
           prefix: --east
         type: float
       north:
