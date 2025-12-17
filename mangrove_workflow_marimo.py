@@ -118,19 +118,19 @@ def _(STUDY_SITES):
 def _(STUDY_SITES, site_dropdown):
     selected_site = site_dropdown.value
     site_info = STUDY_SITES[selected_site]
-    bounds = site_info["bounds"]
+    _bounds = site_info["bounds"]
 
     # OGC Building Block style display
     bbox_yaml = f"""```yaml
-# OGC Building Block Parameters
-bbox:
-  west: {bounds["west"]}
-  south: {bounds["south"]}
-  east: {bounds["east"]}
-  north: {bounds["north"]}
-crs: EPSG:4326
-collection: sentinel-2-l2a
-```"""
+    # OGC Building Block Parameters
+    bbox:
+      west: {_bounds["west"]}
+      south: {_bounds["south"]}
+      east: {_bounds["east"]}
+      north: {_bounds["north"]}
+    crs: EPSG:4326
+    collection: sentinel-2-l2a
+    ```"""
 
     published_info = ""
     if site_info.get("published_agc"):
@@ -138,53 +138,55 @@ collection: sentinel-2-l2a
 
     mo.md(
         f"""
-## {selected_site}
+    ## {selected_site}
 
-**Location:** {site_info['country']}
+    **Location:** {site_info['country']}
 
-**Description:** {site_info['description']}{published_info}
+    **Description:** {site_info['description']}{published_info}
 
-{bbox_yaml}
+    {bbox_yaml}
     """
     )
     return selected_site, site_info
 
 
 @app.cell(hide_code=True)
-def _(site_info, selected_site):
+def _(selected_site, site_info):
     # Create lonboard map showing study area
-    bounds = site_info["bounds"]
-    bbox_polygon = box(bounds["west"], bounds["south"], bounds["east"], bounds["north"])
+    _bounds = site_info["bounds"]
+    _bbox_polygon = box(
+        _bounds["west"], _bounds["south"], _bounds["east"], _bounds["north"]
+    )
 
-    bbox_gdf = gpd.GeoDataFrame(
+    _bbox_gdf = gpd.GeoDataFrame(
         {"name": [selected_site], "type": ["study_area"]},
-        geometry=[bbox_polygon],
+        geometry=[_bbox_polygon],
         crs="EPSG:4326",
     )
 
-    layer = PolygonLayer.from_geopandas(
-        bbox_gdf,
+    _layer = PolygonLayer.from_geopandas(
+        _bbox_gdf,
         get_fill_color=[100, 180, 100, 80],  # Semi-transparent green
         get_line_color=[0, 120, 0, 255],  # Dark green border
         line_width_min_pixels=3,
     )
 
-    center = site_info["center"]
+    _center = site_info["center"]
     # Calculate zoom based on bbox size
-    lon_span = bounds["east"] - bounds["west"]
-    lat_span = bounds["north"] - bounds["south"]
-    max_span = max(lon_span, lat_span)
-    zoom = max(1, min(14, 9 - np.log2(max_span + 0.01)))
+    _lon_span = _bounds["east"] - _bounds["west"]
+    _lat_span = _bounds["north"] - _bounds["south"]
+    _max_span = max(_lon_span, _lat_span)
+    _zoom = max(1, min(14, 9 - np.log2(_max_span + 0.01)))
 
-    view_state = {
-        "longitude": center[0],
-        "latitude": center[1],
-        "zoom": zoom,
+    _view_state = {
+        "longitude": _center[0],
+        "latitude": _center[1],
+        "zoom": _zoom,
     }
 
-    study_area_map = Map(layer, view_state=view_state)
-    study_area_map  # noqa: B018
-    return (study_area_map,)
+    _study_area_map = Map(_layer, view_state=_view_state)
+    _study_area_map  # noqa: B018
+    return
 
 
 @app.cell(hide_code=True)
@@ -212,7 +214,7 @@ def _():
         10, 50, value=20, step=5, label="Max Cloud Cover (%):", show_value=True
     )
     mo.vstack([start_year, end_year, max_cloud_cover])
-    return start_year, end_year, max_cloud_cover
+    return end_year, max_cloud_cover, start_year
 
 
 @app.cell(hide_code=True)
@@ -243,12 +245,12 @@ def _():
 
 @app.cell
 def _(
-    load_temporal_button,
-    start_year,
     end_year,
+    load_temporal_button,
     max_cloud_cover,
-    site_info,
     selected_site,
+    site_info,
+    start_year,
 ):
     mo.stop(
         not load_temporal_button.value,
@@ -267,9 +269,9 @@ def _(
     )
 
     # Setup
-    catalog = Client.open("https://earth-search.aws.element84.com/v1")
-    bounds = site_info["bounds"]
-    bbox = [bounds["west"], bounds["south"], bounds["east"], bounds["north"]]
+    _catalog = Client.open("https://earth-search.aws.element84.com/v1")
+    _bounds = site_info["bounds"]
+    _bbox = [_bounds["west"], _bounds["south"], _bounds["east"], _bounds["north"]]
 
     # Cache directory for temporal data
     site_slug = selected_site.lower().replace(" ", "_")
@@ -284,16 +286,16 @@ def _(
             end=" ",
         )
 
-        search = catalog.search(
+        _search = _catalog.search(
             collections=["sentinel-2-l2a"],
-            bbox=bbox,
+            bbox=_bbox,
             datetime=f"{start_str}/{end_str}",
             query={"eo:cloud_cover": {"lt": max_cloud_cover.value}},
             sortby=[{"field": "eo:cloud_cover", "direction": "asc"}],
             limit=1,
         )
 
-        items = list(search.items())
+        items = list(_search.items())
         if not items:
             print("no scenes")
             continue
@@ -337,7 +339,7 @@ def _(
                     assets=["red", "green", "nir"],
                     epsg=4326,
                     resolution=0.0005,  # Lower res for speed (50m)
-                    bounds_latlon=bbox,
+                    bounds_latlon=_bbox,
                     chunksize=(1, 1, 512, 512),
                 )
                 data = sentinel2_lazy.compute()
@@ -429,7 +431,7 @@ def _(
         temporal_data = {
             "metadata": {
                 "site_name": selected_site,
-                "bbox": bounds,
+                "bbox": _bounds,
                 "n_samples": len(temporal_samples),
                 "date_range": (
                     temporal_samples[0]["date"],
@@ -448,7 +450,6 @@ def _(
     else:
         temporal_data = None
         mo.stop(True, mo.md("**Error:** Need at least 2 samples for temporal analysis"))
-
     return (temporal_data,)
 
 
@@ -476,7 +477,7 @@ def _(temporal_data):
 
 
 @app.cell(hide_code=True)
-def _(temporal_data, time_slider, selected_site):
+def _(selected_site, temporal_data, time_slider):
     mo.stop(temporal_data is None, mo.md("*Load temporal data first*"))
 
     idx = time_slider.value
@@ -610,7 +611,7 @@ def _():
 
 
 @app.cell(hide_code=True)
-def _(temporal_data, selected_site):
+def _(selected_site, temporal_data):
     mo.stop(temporal_data is None, mo.md("*Load temporal data first*"))
 
     summary = temporal_data["summary"]
@@ -665,7 +666,7 @@ def _(temporal_data, selected_site):
             mo.ui.table(comparison_df, selection=None),
         ]
     )
-    return (comparison_df,)
+    return
 
 
 @app.cell(hide_code=True)
@@ -691,7 +692,7 @@ def _():
 
 
 @app.cell(hide_code=True)
-def _(temporal_data, selected_site):
+def _(selected_site, temporal_data):
     mo.stop(temporal_data is None, mo.md("*No data to export*"))
 
     # Create export DataFrame with all temporal samples
