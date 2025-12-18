@@ -674,10 +674,15 @@ def _():
     ---
     ## Methodology
 
+    **Mangrove Detection:** NDVI threshold `0.5 < NDVI < 0.85`
+    - Lower bound (0.5) excludes sparse vegetation and agriculture
+    - Upper bound (0.85) excludes dense non-mangrove forest
+
     **Biomass Equation:** `Biomass (Mg/ha) = 250.5 × NDVI - 75.2` (R² = 0.72)
 
     | Parameter | Value | Source |
     |-----------|-------|--------|
+    | NDVI range | 0.5 - 0.85 | Mangrove-specific threshold |
     | Slope | 250.5 | Wunbaik Forest, Myanmar |
     | Intercept | -75.2 | Regional calibration |
     | Carbon fraction | 47% | IPCC 2006 Guidelines |
