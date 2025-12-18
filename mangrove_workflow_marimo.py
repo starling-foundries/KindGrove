@@ -495,9 +495,23 @@ def _(selected_site, temporal_data, time_slider):
         with rioxarray.open_rasterio(_biomass_path) as _src:
             _biomass_raster = _src.values[0]
 
+        # Downsample for display (max 500x500 pixels)
+        _max_dim = 500
+        _h, _w = _biomass_raster.shape
+        if _h > _max_dim or _w > _max_dim:
+            _scale = min(_max_dim / _h, _max_dim / _w)
+            _new_h, _new_w = int(_h * _scale), int(_w * _scale)
+            from scipy.ndimage import zoom
+
+            _biomass_display = zoom(
+                _biomass_raster, (_new_h / _h, _new_w / _w), order=0
+            )
+        else:
+            _biomass_display = _biomass_raster
+
         # Create Plotly heatmap
         _fig = px.imshow(
-            _biomass_raster,
+            _biomass_display,
             color_continuous_scale="YlGn",
             labels={"color": "Biomass (Mg/ha)"},
             title=f"Biomass: {_date_str} | Mean: {_sample['biomass_mean']:.1f} Mg/ha | Area: {_sample['mangrove_area_ha']:.0f} ha",
