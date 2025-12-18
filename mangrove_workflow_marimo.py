@@ -215,12 +215,13 @@ def _():
 def _():
     mo.md(
         r"""
-    Temporal analysis samples **3 key points** from Sentinel-2's operational history:
+    Temporal analysis samples **4 key points** from Sentinel-2's operational history:
     - **Initial** (2017): First available low-cloud scene
-    - **Midpoint** (2020-2021): Mid-operational baseline
+    - **Pre-Cyclone Amphan** (May 1-19, 2020): Before landfall
+    - **Post-Cyclone Amphan** (June 5+, 2020): After impact
     - **Current** (2024): Most recent measurement
 
-    This enables quick change detection (~2-3 min) while capturing the full trend.
+    Cyclone Amphan made landfall May 20, 2020 - one of the strongest cyclones to impact the Bay of Bengal.
     """
     )
     return
@@ -240,14 +241,16 @@ def _(load_temporal_button, max_cloud_cover, selected_site, site_info):
         mo.md("*Click 'Load Temporal Data' to begin temporal analysis*"),
     )
 
-    # 3 strategic time windows: Initial, Midpoint, Current
+    # 4 strategic time windows: Initial, Pre/Post Cyclone Amphan, Current
+    # Cyclone Amphan made landfall May 20, 2020
     _time_windows = [
         ("Initial (2017)", "2017-01-01", "2017-12-31"),
-        ("Midpoint (2020-21)", "2020-06-01", "2021-06-01"),
+        ("Pre-Cyclone Amphan", "2020-05-01", "2020-05-19"),
+        ("Post-Cyclone Amphan", "2020-06-05", "2020-12-31"),
         ("Current (2024)", "2024-01-01", "2024-12-31"),
     ]
 
-    print("Querying 3 key time points for change detection...")
+    print("Querying 4 key time points for change detection...")
 
     # Setup
     _catalog = Client.open("https://earth-search.aws.element84.com/v1")
@@ -262,7 +265,7 @@ def _(load_temporal_button, max_cloud_cover, selected_site, site_info):
     _temporal_samples = []
 
     for _i, (_label, _start_str, _end_str) in enumerate(_time_windows):
-        print(f"  [{_i+1}/3] {_label}: Searching...", end=" ")
+        print(f"  [{_i+1}/4] {_label}: Searching...", end=" ")
 
         _search = _catalog.search(
             collections=["sentinel-2-l2a"],
