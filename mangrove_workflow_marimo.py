@@ -495,19 +495,30 @@ def _(selected_site, temporal_data, time_slider):
         with rioxarray.open_rasterio(_biomass_path) as _src:
             _biomass_raster = _src.values[0]
 
+        # Crop to valid data region (remove NaN borders)
+        _valid_mask = ~np.isnan(_biomass_raster)
+        _rows = np.any(_valid_mask, axis=1)
+        _cols = np.any(_valid_mask, axis=0)
+        if np.any(_rows) and np.any(_cols):
+            _rmin, _rmax = np.where(_rows)[0][[0, -1]]
+            _cmin, _cmax = np.where(_cols)[0][[0, -1]]
+            _biomass_cropped = _biomass_raster[_rmin : _rmax + 1, _cmin : _cmax + 1]
+        else:
+            _biomass_cropped = _biomass_raster
+
         # Downsample for display (max 500x500 pixels)
         _max_dim = 500
-        _h, _w = _biomass_raster.shape
+        _h, _w = _biomass_cropped.shape
         if _h > _max_dim or _w > _max_dim:
             _scale = min(_max_dim / _h, _max_dim / _w)
             _new_h, _new_w = int(_h * _scale), int(_w * _scale)
             from scipy.ndimage import zoom
 
             _biomass_display = zoom(
-                _biomass_raster, (_new_h / _h, _new_w / _w), order=0
+                _biomass_cropped, (_new_h / _h, _new_w / _w), order=0
             )
         else:
-            _biomass_display = _biomass_raster
+            _biomass_display = _biomass_cropped
 
         # Create Plotly heatmap
         _fig = px.imshow(
