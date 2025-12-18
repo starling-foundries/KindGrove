@@ -62,10 +62,15 @@ def _():
 def _():
     STUDY_SITES = {
         "Thor Heyerdahl Climate Park": {
-            "center": (95.25, 16.0),
-            "bounds": {"west": 95.15, "east": 95.35, "south": 15.9, "north": 16.1},
+            "center": (94.482, 17.063),
+            "bounds": {
+                "west": 94.462,
+                "east": 94.502,
+                "south": 17.044,
+                "north": 17.082,
+            },
             "country": "Myanmar",
-            "description": "1,800 acres of mangrove restoration in Ayeyarwady Delta",
+            "description": "1,800 hectares of mangrove restoration in Ayeyarwady Delta",
             "published_agc": None,
         },
         "Can Gio Biosphere Reserve": {
