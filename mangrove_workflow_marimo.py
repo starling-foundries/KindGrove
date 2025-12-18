@@ -339,9 +339,9 @@ def _(load_temporal_button, max_cloud_cover, selected_site, site_info):
                     _band_xr = _band.rio.write_crs("EPSG:4326")
                     _band_xr.rio.to_raster(_cache_files[_band_name], compress="lzw")
 
-            # Validate scene has enough valid data (>5% non-NaN)
+            # Validate scene has enough valid data (>1% non-NaN for edge-of-tile sites)
             _valid_pct = np.sum(~np.isnan(_bands_data["nir"])) / _bands_data["nir"].size
-            if _valid_pct < 0.05:
+            if _valid_pct < 0.01:
                 print(f"skipped ({_valid_pct*100:.1f}% valid)")
                 import shutil
 
