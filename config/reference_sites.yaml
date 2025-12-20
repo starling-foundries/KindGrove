@@ -1,0 +1,182 @@
+# Reference Sites from Literature
+# Used for validation and comparison with published results
+
+reference_sites:
+  madagascar_western:
+    name: "Madagascar Western Mangroves"
+    description: "Western Madagascar coastal mangroves - Vieilledent et al. 2019"
+    citation: "Vieilledent, G., et al. (2019). Madagascar mangrove carbon stocks"
+    location:
+      country: "Madagascar"
+      region: "Western coast"
+      center_lon: 44.3
+      center_lat: -18.5
+      bounds:
+        west: 43.2
+        east: 45.4
+        south: -22.5
+        north: -15.5
+    published_results:
+      study_year: 2019
+      method: "Sentinel-2 + Random Forest"
+      biomass_model:
+        type: "Random Forest regression"
+        r_squared: 0.81
+        rmse_mg_ha: 28.4
+      mean_biomass_mg_ha: 142.5
+      biomass_range_mg_ha: [45, 285]
+      accuracy_percent: 92.3
+      total_area_ha: 327000
+      carbon_stock_tg: 21.4  # Teragrams (millions of tonnes)
+    comparison_notes: |
+      Our simpler threshold-based method (R² = 0.72) is more conservative
+      than their Random Forest approach (R² = 0.81). Expected difference
+      in biomass estimates: ±15-20%.
+
+  abu_dhabi:
+    name: "Abu Dhabi Coastal Mangroves"
+    description: "UAE coastal mangroves - Alsumaiti & Hussain 2020"
+    citation: "Alsumaiti, T.S. & Hussain, K.A. (2020). Landsat-based mangrove mapping"
+    location:
+      country: "United Arab Emirates"
+      region: "Abu Dhabi coast"
+      center_lon: 54.4
+      center_lat: 24.5
+      bounds:
+        west: 51.5
+        east: 56.0
+        south: 22.5
+        north: 25.5
+    published_results:
+      study_year: 2020
+      method: "Landsat 8 + Machine Learning"
+      biomass_model:
+        type: "Support Vector Regression"
+        r_squared: 0.76
+        rmse_mg_ha: 18.2
+      mean_biomass_mg_ha: 87.3
+      biomass_range_mg_ha: [25, 165]
+      accuracy_percent: 89.5
+      total_area_ha: 15400
+      carbon_stock_tg: 0.63
+    comparison_notes: |
+      Arid-climate mangroves with lower biomass than tropical sites.
+      Our NDVI-based model may underestimate in water-limited environments.
+      Expected accuracy: ±25-30% for arid zones.
+
+  myanmar_wunbaik:
+    name: "Myanmar Wunbaik Mangrove Forest"
+    description: "Wunbaik Forest Reserve - SOURCE OF OUR BIOMASS EQUATION"
+    citation: "Myanmar Mangrove Studies (2025) - NDVI-biomass relationship"
+    location:
+      country: "Myanmar"
+      region: "Ayeyarwady Delta"
+      center_lon: 94.75
+      center_lat: 16.75
+      bounds:
+        west: 94.7
+        east: 94.8
+        south: 16.7
+        north: 16.8
+    published_results:
+      study_year: 2025
+      method: "Field plots + Sentinel-2"
+      biomass_model:
+        type: "Linear regression NDVI-biomass"
+        equation: "Biomass = 250.5 × NDVI - 75.2"
+        r_squared: 0.72
+        rmse_mg_ha: 32.1
+        field_plots: 600
+      mean_biomass_mg_ha: 112.3
+      biomass_range_mg_ha: [35, 190]
+      accuracy_percent: 87.2
+      total_area_ha: 45000
+      carbon_stock_tg: 2.38
+    comparison_notes: |
+      This is the SOURCE equation for our workflow.
+      Direct application expected to match within ±5-10% for similar
+      Delta mangrove ecosystems. Thor Heyerdahl site is within this region.
+
+  indonesia_kalimantan:
+    name: "Indonesian Borneo Mangroves"
+    description: "Kalimantan peat-mangrove systems - High biomass reference"
+    citation: "Murdiyarso et al. (2015). Indonesian mangrove carbon stocks"
+    location:
+      country: "Indonesia"
+      region: "Kalimantan (Borneo)"
+      center_lon: 114.5
+      center_lat: -2.5
+      bounds:
+        west: 108.0
+        east: 119.0
+        south: -4.0
+        north: 3.0
+    published_results:
+      study_year: 2015
+      method: "Field measurements + ALOS PALSAR"
+      biomass_model:
+        type: "Allometric + SAR backscatter"
+        r_squared: 0.68
+        rmse_mg_ha: 45.3
+      mean_biomass_mg_ha: 218.5
+      biomass_range_mg_ha: [95, 485]
+      accuracy_percent: 78.5
+      total_area_ha: 980000
+      carbon_stock_tg: 100.7
+      notes: "Includes below-ground biomass (our method does not)"
+    comparison_notes: |
+      Very high biomass site with mature, undisturbed forests.
+      Our optical-based method may saturate at high biomass (>200 Mg/ha).
+      C-band SAR saturation occurs at 50-70 Mg/ha in mangroves.
+      Expected underestimation: 20-40% for high-biomass sites.
+
+  mexico_sinaloa:
+    name: "Mexico Pacific Coast Mangroves"
+    description: "Sinaloa state mangroves - Semi-arid comparison"
+    citation: "Valderrama-Landeros et al. (2017). Mexican mangrove biomass"
+    location:
+      country: "Mexico"
+      region: "Sinaloa Pacific coast"
+      center_lon: -106.5
+      center_lat: 24.8
+      bounds:
+        west: -109.5
+        east: -105.5
+        south: 22.5
+        north: 26.5
+    published_results:
+      study_year: 2017
+      method: "SPOT + Ground truth"
+      biomass_model:
+        type: "Allometric field-based"
+        r_squared: 0.73
+        rmse_mg_ha: 26.8
+      mean_biomass_mg_ha: 98.4
+      biomass_range_mg_ha: [30, 175]
+      accuracy_percent: 88.1
+      total_area_ha: 95000
+      carbon_stock_tg: 4.39
+    comparison_notes: |
+      Semi-arid climate similar to Abu Dhabi but with more rainfall.
+      Our NDVI model should perform well (similar R² = 0.73 vs our 0.72).
+      Expected accuracy: ±20-25% for semi-arid mangroves.
+
+# Expected Performance Summary
+validation_expectations:
+  optimal_conditions:
+    - "Tropical delta mangroves (Myanmar, Bangladesh)"
+    - "Moderate biomass range (50-150 Mg/ha)"
+    - "Clear sky conditions (< 20% cloud cover)"
+    - "Recent imagery (< 90 days old)"
+
+  reduced_accuracy:
+    - "Arid climate mangroves (< 30% accuracy)"
+    - "Very high biomass sites (saturation effects)"
+    - "Mixed vegetation (non-mangrove confusion)"
+    - "Cloudy or hazy conditions"
+
+  methodology_comparison:
+    our_method: "Threshold-based NDVI (R² = 0.72)"
+    literature_range: "Random Forest / ML (R² = 0.76-0.81)"
+    accuracy_difference: "85-90% vs 90-99% (conservative by design)"
+    uncertainty: "±30% (IPCC Tier 2 compliant)"

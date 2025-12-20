@@ -29,6 +29,9 @@ wheels/
 .jupyter_ystore.db
 *.ipynb.invalid
 
+# Marimo
+__marimo__/
+
 # Data files (large satellite imagery)
 *.tif
 *.tiff
@@ -43,54 +46,14 @@ outputs/
 results/
 mangrove_workflow_preview.html
 
-# Debug/intermediate data (not for version control)
+# Debug/intermediate data
 stac_data_capture/
-__marimo__/
-capture_stac_data.py
 mangrove_assessment_results.json
 STAC_DATA_FLOW.json
+execute.json
 
-# Development scripts and intermediate work
-add_visual_confirmation.py
-fix_notebook.py
-visual_confirmation_cell.py
-test_installation.py
-quick_check.sh
-launch.sh
-environment.yml
-requirements-minimal.txt
-validity_assessment.md
-debug_*.py
-fix_*.py
-final_fix_*.py
-
-# Test and development notebooks
-test_cwl_simple.ipynb
-
-# Documentation drafts and internal notes
-INTERNAL_STATUS.md
-BUG_FIX.md
-FINAL_STEPS.md
-GITLAB_SETUP.md
-INSTALLATION_GUIDE.md
-LAUNCH_CHECKLIST.md
-READY_TO_TEST.md
-REAL_DATA_FIX.md
-WEB_UPLOAD_GUIDE.md
-QUICKSTART.md
-WORKFLOW_README.md
-VALIDATION_SESSION.md
-OBSOLETE_NOTEBOOKS.md
-UPLOAD_SUMMARY.md
-SHAREABLE_STATUS.md
-WIKI_PASTE_READY.md
-WIKI_PASTE_READY_V2.md
-FILE_CONNECTIONS_DIAGRAM.md
-
-# Config and source folders (intermediate work)
-config/
-src/
-archive/
+# Linting cache
+.ruff_cache/
 
 # IDEs
 .vscode/
@@ -107,5 +70,8 @@ Thumbs.db
 .env
 .envrc
 
-# Pre-commit
-.pre-commit-config.yaml.swp
+# Archive (large historical notebooks)
+archive/
+
+# Source utilities (local development)
+src/

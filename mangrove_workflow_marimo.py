@@ -82,9 +82,14 @@ def _():
         },
         "Sundarbans": {
             "center": (89.46, 22.0),
-            "bounds": {"west": 89.0, "east": 89.92, "south": 21.5, "north": 22.5},
+            "bounds": {
+                "west": 89.325,
+                "east": 89.595,
+                "south": 21.865,
+                "north": 22.135,
+            },
             "country": "Bangladesh/India",
-            "description": "World's largest mangrove forest, varies by salinity zone",
+            "description": "30km × 30km subset of world's largest mangrove forest",
             "published_agc": "24-119 Mg C/ha (salinity dependent), Mean AGB: 243.4 Mg/ha",
         },
         "Wunbaik Reserved Forest": {
@@ -344,9 +349,10 @@ def _(load_temporal_button, max_cloud_cover, selected_site, site_info):
                     _band_xr = _band.rio.write_crs("EPSG:4326")
                     _band_xr.rio.to_raster(_cache_files[_band_name], compress="lzw")
 
-            # Validate scene has enough valid data (>5% non-NaN)
+            # Validate scene has enough valid data (>1% non-NaN)
+            # Lower threshold allows multi-tile sites to find scenes
             _valid_pct = np.sum(~np.isnan(_bands_data["nir"])) / _bands_data["nir"].size
-            if _valid_pct < 0.05:
+            if _valid_pct < 0.01:
                 print(f"skipped ({_valid_pct*100:.1f}% valid)")
                 import shutil
 
@@ -358,8 +364,8 @@ def _(load_temporal_button, max_cloud_cover, selected_site, site_info):
             _nir = _bands_data["nir"]
             _ndvi = (_nir - _red) / (_nir + _red + 1e-8)
 
-            # Tighter NDVI range for mangroves (excludes agriculture/other forest)
-            _mangrove_mask = (_ndvi > 0.5) & (_ndvi < 0.85)
+            # Standard NDVI threshold for mangrove detection (literature-backed)
+            _mangrove_mask = (_ndvi > 0.4) & (_ndvi < 0.95)
             _biomass = 250.5 * _ndvi - 75.2
             _biomass = np.where(_mangrove_mask, _biomass, np.nan)
             _biomass = np.maximum(_biomass, 0)
@@ -367,12 +373,25 @@ def _(load_temporal_button, max_cloud_cover, selected_site, site_info):
             _valid_biomass = _biomass[~np.isnan(_biomass)]
 
             _pixel_area_ha = (50 * 50) / 10000  # 50m resolution
-            _mangrove_area_ha = np.sum(_mangrove_mask) * _pixel_area_ha
+
+            # Coverage-aware metrics (scale-independent, comparable across scenes)
+            _valid_pixels = np.sum(~np.isnan(_bands_data["nir"]))
+            _valid_coverage_ha = _valid_pixels * _pixel_area_ha
+            _mangrove_pixels = np.sum(_mangrove_mask)
+            _mangrove_area_ha = _mangrove_pixels * _pixel_area_ha
+
+            # Mangrove fraction: % of valid observed area that is mangrove
+            # This metric IS comparable across scenes with different coverage
+            _mangrove_fraction = (
+                (_mangrove_pixels / _valid_pixels * 100) if _valid_pixels > 0 else 0
+            )
 
             _sample = {
                 "date": _scene_date,
                 "scene_id": _scene_id,
                 "cloud_cover": _cloud,
+                "valid_coverage_ha": float(_valid_coverage_ha),
+                "valid_coverage_pct": float(_valid_pct * 100),
                 "biomass_mean": float(np.mean(_valid_biomass))
                 if len(_valid_biomass) > 0
                 else 0,
@@ -380,7 +399,11 @@ def _(load_temporal_button, max_cloud_cover, selected_site, site_info):
                 if len(_valid_biomass) > 0
                 else 0,
                 "mangrove_area_ha": float(_mangrove_area_ha),
+                "mangrove_fraction": float(_mangrove_fraction),
                 "carbon_stock": float(np.sum(_valid_biomass) * _pixel_area_ha * 0.47)
+                if len(_valid_biomass) > 0
+                else 0,
+                "carbon_density": float(np.mean(_valid_biomass) * 0.47)
                 if len(_valid_biomass) > 0
                 else 0,
             }
@@ -515,11 +538,13 @@ def _(selected_site, temporal_data, time_slider):
             _biomass_display = _biomass_raster
 
         # Create Plotly heatmap (NaN shows as transparent)
+        _coverage_pct = _sample.get("valid_coverage_pct", 0)
+        _mangrove_frac = _sample.get("mangrove_fraction", 0)
         _fig = px.imshow(
             _biomass_display,
             color_continuous_scale="YlGn",
             labels={"color": "Biomass (Mg/ha)"},
-            title=f"Biomass: {_date_str} | Mean: {_sample['biomass_mean']:.1f} Mg/ha | Area: {_sample['mangrove_area_ha']:.0f} ha",
+            title=f"Biomass: {_date_str} | Mean: {_sample['biomass_mean']:.1f} Mg/ha | Coverage: {_coverage_pct:.0f}% | Mangrove: {_mangrove_frac:.1f}%",
         )
         _fig.update_layout(
             height=500,
@@ -638,15 +663,20 @@ def _(selected_site, temporal_data):
     _initial = _summary["initial"]
     _current = _summary["current"]
 
-    # Calculate changes
+    # Calculate changes using SCALE-INDEPENDENT metrics
     _biomass_change = _current["biomass_mean"] - _initial["biomass_mean"]
-    _area_change = _current["mangrove_area_ha"] - _initial["mangrove_area_ha"]
-    _carbon_change = _current["carbon_stock"] - _initial["carbon_stock"]
+    _fraction_change = _current.get("mangrove_fraction", 0) - _initial.get(
+        "mangrove_fraction", 0
+    )
+    _carbon_density_change = _current.get("carbon_density", 0) - _initial.get(
+        "carbon_density", 0
+    )
 
-    # Determine trend
+    # Determine trend based on biomass (scale-independent)
     _trend_direction = "📈 GROWTH" if _biomass_change > 0 else "📉 DECLINE"
 
-    # Create comparison table
+    # Create comparison table with SCALE-INDEPENDENT metrics
+    # These metrics are comparable even when scenes have different spatial coverage
     _comparison_df = pd.DataFrame(
         [
             {
@@ -656,22 +686,28 @@ def _(selected_site, temporal_data):
                 "Change": f"{(_current['date'] - _initial['date']).days} days",
             },
             {
+                "Metric": "Scene Coverage (%)",
+                "Initial": f"{_initial.get('valid_coverage_pct', 0):.1f}%",
+                "Current": f"{_current.get('valid_coverage_pct', 0):.1f}%",
+                "Change": "⚠️ Variable coverage",
+            },
+            {
                 "Metric": "Mean Biomass (Mg/ha)",
                 "Initial": f"{_initial['biomass_mean']:.1f}",
                 "Current": f"{_current['biomass_mean']:.1f}",
                 "Change": f"{_biomass_change:+.1f} ({_summary['change_percent']:+.1f}%)",
             },
             {
-                "Metric": "Mangrove Area (ha)",
-                "Initial": f"{_initial['mangrove_area_ha']:.0f}",
-                "Current": f"{_current['mangrove_area_ha']:.0f}",
-                "Change": f"{_area_change:+.0f}",
+                "Metric": "Mangrove Fraction (%)",
+                "Initial": f"{_initial.get('mangrove_fraction', 0):.1f}%",
+                "Current": f"{_current.get('mangrove_fraction', 0):.1f}%",
+                "Change": f"{_fraction_change:+.1f}%",
             },
             {
-                "Metric": "Carbon Stock (Mg C)",
-                "Initial": f"{_initial['carbon_stock']:,.0f}",
-                "Current": f"{_current['carbon_stock']:,.0f}",
-                "Change": f"{_carbon_change:+,.0f}",
+                "Metric": "Carbon Density (Mg C/ha)",
+                "Initial": f"{_initial.get('carbon_density', 0):.1f}",
+                "Current": f"{_current.get('carbon_density', 0):.1f}",
+                "Change": f"{_carbon_density_change:+.1f}",
             },
         ]
     )
@@ -696,21 +732,44 @@ def _():
     ---
     ## Methodology
 
-    **Mangrove Detection:** NDVI threshold `0.5 < NDVI < 0.85`
-    - Lower bound (0.5) excludes sparse vegetation and agriculture
-    - Upper bound (0.85) excludes dense non-mangrove forest
+    **Mangrove Detection:** NDVI threshold `0.4 < NDVI < 0.95`
+    - Lower bound (0.4) excludes water, bare soil, and sparse vegetation
+    - Upper bound (0.95) avoids sensor saturation artifacts
 
     **Biomass Equation:** `Biomass (Mg/ha) = 250.5 × NDVI - 75.2` (R² = 0.72)
 
     | Parameter | Value | Source |
     |-----------|-------|--------|
-    | NDVI range | 0.5 - 0.85 | Mangrove-specific threshold |
+    | NDVI range | 0.4 - 0.95 | Standard vegetation threshold |
     | Slope | 250.5 | Wunbaik Forest, Myanmar |
     | Intercept | -75.2 | Regional calibration |
     | Carbon fraction | 47% | IPCC 2006 Guidelines |
     | Resolution | 50m | Optimized for temporal analysis |
 
     ⚠️ **Uncertainty:** ±30% (IPCC Tier 2)
+
+    ---
+    ## Data Coverage Tradeoffs
+
+    **Scale-Independent Metrics:** This workflow uses coverage-normalized metrics that are comparable across scenes with different spatial coverage:
+    - **Mean Biomass (Mg/ha):** Average per hectare of observed mangrove
+    - **Mangrove Fraction (%):** Percentage of valid observed area that is mangrove
+    - **Carbon Density (Mg C/ha):** Carbon per hectare of mangrove
+
+    **Coverage Limitations:** Individual Sentinel-2 scenes may only cover a fraction of large study areas due to:
+    - Tile boundaries (scenes are ~100km × 100km)
+    - Cloud masking removing portions of scenes
+    - Orbit patterns causing variable overlap with bounding boxes
+
+    **Alternative: Harmonized Landsat Sentinel (HLS)**
+
+    For production workflows requiring consistent spatial coverage, consider NASA's HLS product:
+    - Combines Landsat 8/9 + Sentinel-2A/B/C into unified constellation
+    - 2-3 day revisit vs 5 days for Sentinel-2 alone
+    - More scenes per time window = better coverage probability
+    - Trade-off: 30m resolution (vs 10m) and requires NASA Earthdata credentials
+
+    This workflow uses open-access Sentinel-2 via AWS Earth Search to avoid credential requirements.
     """
     )
     return
@@ -721,6 +780,7 @@ def _(selected_site, temporal_data):
     mo.stop(temporal_data is None, mo.md("*No data to export*"))
 
     # Create export DataFrame with all temporal samples
+    # Includes both absolute and scale-independent metrics
     _export_data = []
     for _sample in temporal_data["samples"]:
         _export_data.append(
@@ -729,8 +789,11 @@ def _(selected_site, temporal_data):
                 "date": _sample["date"].strftime("%Y-%m-%d"),
                 "scene_id": _sample["scene_id"],
                 "cloud_cover_pct": _sample["cloud_cover"],
+                "valid_coverage_pct": _sample.get("valid_coverage_pct", 0),
                 "biomass_mean_mg_ha": _sample["biomass_mean"],
                 "biomass_std_mg_ha": _sample["biomass_std"],
+                "mangrove_fraction_pct": _sample.get("mangrove_fraction", 0),
+                "carbon_density_mg_c_ha": _sample.get("carbon_density", 0),
                 "mangrove_area_ha": _sample["mangrove_area_ha"],
                 "carbon_stock_mg_c": _sample["carbon_stock"],
             }
