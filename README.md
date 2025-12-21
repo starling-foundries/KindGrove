@@ -11,9 +11,9 @@ Open Science Platform Demonstrator for OGC 2025
 
 ## Overview
 
-An interactive Jupyter notebook workflow for estimating mangrove forest biomass and carbon stocks using Sentinel-2 satellite imagery from AWS Open Data Registry. This demonstrates an initial baseline approach that can be augmented with complementary data sources (LiDAR, InSAR, thermal) or integrated with coastal vulnerability assessments depending on project needs.
+An interactive notebook workflow for **temporal analysis of mangrove biomass change** using Sentinel-2 satellite imagery from AWS Open Data Registry. The workflow uses strategic 4-point temporal sampling to detect change across key time periods, with scale-independent metrics for fair comparison.
 
-**Study Site**: Thor Heyerdahl Climate Park, Myanmar - 1,800 acres of mangrove restoration in the Ayeyarwady Delta
+**Study Sites**: Bay of Bengal region including Can Gio Biosphere Reserve (Vietnam), Sundarbans (Bangladesh/India), Thor Heyerdahl Climate Park (Myanmar), and Wunbaik Reserved Forest (Myanmar).
 
 ## Quick Start
 
@@ -39,7 +39,7 @@ marimo edit mangrove_workflow_marimo.py
 - 🤖 **AI-native** - optimized for Claude Code collaboration
 - 🎨 **Interactive Plotly** - reactive visualizations
 
-**Usage:** Select study site → Click "Search & Load Data" → Click "Detect Mangroves" → Click "Estimate Biomass" → Click "Export Results"
+**Usage:** Select study site → Click "Load Temporal Data" → Use slider to view timelapse → Review trend analysis and comparison table
 
 📚 **Full Guide:** See [docs/MARIMO_USAGE.md](docs/MARIMO_USAGE.md)
 
@@ -89,12 +89,12 @@ Generates the same outputs as interactive notebooks but without UI.
 | Mexico 2017 | Field allometric | 0.73 | Same approach |
 
 ### Workflow Stages
-1. **Study Area Definition** - Interactive location selector
-2. **STAC Data Discovery** - Query AWS catalog for cloud-free scenes
-3. **Vegetation Index Calculation** - NDVI, NDWI, SAVI from spectral bands
-4. **Mangrove Detection** - Threshold-based classification
+1. **Study Area Selection** - Choose from predefined sites with bbox parameters
+2. **Temporal Sampling** - 4-point strategy: Initial (2017), Pre/Post Cyclone Amphan (2020), Current (2024)
+3. **Scene Validation** - Coverage threshold filtering (>1% valid pixels)
+4. **Mangrove Detection** - NDVI threshold classification (0.4 < NDVI < 0.95)
 5. **Biomass Estimation** - Allometric model (Biomass = 250.5 × NDVI - 75.2)
-6. **Carbon Accounting** - IPCC-compliant calculations
+6. **Scale-Independent Metrics** - Mangrove fraction, carbon density for fair comparison
 
 ### Outputs
 - CSV summaries (area, biomass statistics, carbon totals)
@@ -109,18 +109,15 @@ When independent sensors converge on the same conclusion, confidence increases. 
 
 ## Documentation
 
-### Interactive Notebooks
+### User Guides
+- **[FINDINGS.md](FINDINGS.md)** - Methodology, results, and lessons learned
+- **[QUICKSTART.md](QUICKSTART.md)** - Getting started guide
 - **[docs/MARIMO_USAGE.md](docs/MARIMO_USAGE.md)** - Complete marimo notebook user guide
-- **[docs/MARIMO_DESIGN.md](docs/MARIMO_DESIGN.md)** - marimo architecture and design decisions
-- **[docs/MARIMO_MIGRATION.md](docs/MARIMO_MIGRATION.md)** - Jupyter to marimo conversion log
 
-### Project Documentation
-- **HANDOFF.md** - Complete integration guide and wiki content for OGC
-- **CWL_README.md** - CWL workflow implementation summary
-- **DEMO_GUIDE.md** - Step-by-step presentation walkthrough
-- **VALIDATION_COMPARISON.md** - Cross-validation against 5 peer-reviewed studies
-- **MANGROVE_CVI_INTEGRATION.md** - Integration scenario with coastal vulnerability workflows
-- **FUTURE_DATA_SOURCES.md** - Expansion roadmap with 10 NASA/ESA data sources
+### Technical Documentation
+- **[docs/MARIMO_DESIGN.md](docs/MARIMO_DESIGN.md)** - Architecture and design decisions
+- **[docs/CWL_README.md](docs/CWL_README.md)** - CWL workflow implementation
+- **[docs/WORKFLOW_README.md](docs/WORKFLOW_README.md)** - Workflow reference
 
 ## Technical Stack
 
@@ -160,15 +157,13 @@ All methods derived from peer-reviewed literature:
 
 ## Current Status
 
-The workflow architecture and scientific methods are complete. The data loading component is being debugged (coordinate system handling in stackstac). All documentation, validation studies, and integration scenarios are finished.
+**v1.0.0-ogc-delivery** - The workflow is complete and ready for demonstration. Key features:
+- Temporal analysis with 4-point strategic sampling
+- Scale-independent metrics for fair comparison across variable coverage
+- Interactive marimo notebook with Plotly visualizations
+- CWL workflow packaging for automated execution
 
-## Example Results
-
-**Thor Heyerdahl Climate Park demonstration** (when data loading is complete):
-- Detected mangrove area: ~156 hectares
-- Mean biomass: ~112 Mg/ha
-- Total carbon stock: ~8,240 Mg C
-- **CO2 equivalent: ~30,241 tonnes CO2**
+See [FINDINGS.md](FINDINGS.md) for detailed methodology and lessons learned.
 
 ## Conservation Impact
 

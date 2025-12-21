@@ -33,16 +33,16 @@ def _():
         r"""
     # Mangrove Biomass Temporal Analysis
 
-    This notebook analyzes mangrove biomass change over time using Sentinel-2 satellite imagery (2017-present).
+    This notebook analyzes mangrove biomass change over time using Sentinel-2 satellite imagery.
 
     **Features:**
-    - Select from validated study sites with published biomass data
-    - View study area as OGC Building Block parameters
-    - Sample ~20 scenes across Sentinel-2's operational history
-    - Visualize biomass change with interactive timelapse
-    - Compare initial vs current measurements
+    - Select from study sites in the Bay of Bengal region
+    - View study area as OGC Building Block parameters (bbox, CRS)
+    - Strategic 4-point temporal sampling: Initial (2017), Pre/Post Cyclone Amphan (2020), Current (2024)
+    - Scale-independent metrics for fair comparison across scenes with variable coverage
+    - Interactive timelapse visualization
 
-    All data is open access from ESA/AWS - no API keys required.
+    **Data Access:** Open access Sentinel-2 L2A via AWS Earth Search STAC API - no credentials required.
     """
     )
     return
