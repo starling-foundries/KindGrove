@@ -119,6 +119,11 @@ When independent sensors converge on the same conclusion, confidence increases. 
 - **[docs/CWL_README.md](docs/CWL_README.md)** - CWL workflow implementation
 - **[docs/WORKFLOW_README.md](docs/WORKFLOW_README.md)** - Workflow reference
 
+### OSPD Engineering Report Annexes
+- **D001 Annex K** - Scientific workflow: methodology, temporal analysis, scale-independent metrics
+- **D010 Annex M** - Building Blocks experience: bbox/temporal gaps, cloud egress, lessons learned
+- Available at: http://ogc.pages.ogc.org/OSPD-2025/
+
 ## Technical Stack
 
 - **Python 3.8+**: NumPy, Pandas, Xarray, GeoPandas, Rasterio
