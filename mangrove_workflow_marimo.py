@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.18.4"
+__generated_with = "0.20.2"
 app = marimo.App(width="medium")
 
 with app.setup(hide_code=True):
@@ -722,6 +722,11 @@ def _(selected_site, temporal_data):
             mo.ui.table(_comparison_df, selection=None),
         ]
     )
+    return
+
+
+@app.cell
+def _():
     return
 
 
