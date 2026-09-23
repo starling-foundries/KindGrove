@@ -1,0 +1,100 @@
+[
+  {
+    "id": "https://earth-search.aws.element84.com/v1/collections/sentinel-2-l2a/items/S2C_46PGC_20260913_0_L2A",
+    "provType": "prov:Entity",
+    "name": "Sentinel-2 L2A scene S2C_46PGC_20260913_0_L2A",
+    "generatedAtTime": "2026-09-13T04:14:03.610000Z",
+    "wasAttributedTo": "https://registry.opendata.aws/sentinel-2-l2a-cogs/",
+    "eo:cloud_cover": 2.831297,
+    "fingerprint:root": "235688f2d9d71579244e6eb660d8815caecac5c7a69365d18c86440850226b88",
+    "fingerprint:dggrs": "https://www.opengis.net/def/dggrs/OGC/1.0/rHEALPix",
+    "fingerprint:zone_level": 11,
+    "fingerprint:zone_count": 3710047,
+    "fingerprint:profile": "529e59bf3e91e8cbd9dc5190eb9733aef36e8ddc77587f1a9c19ca5e50885807"
+  },
+  {
+    "id": "urn:kindgrove:activity:mangrove-biomass-analysis:mangrove-analysis-20260919-161129",
+    "provType": "prov:Activity",
+    "name": "Mangrove biomass estimation",
+    "processType": [
+      "spectral-index-computation",
+      "classification",
+      "regression-model-application",
+      "aggregation"
+    ],
+    "endedAtTime": "2026-09-19T16:11:29.425434Z",
+    "used": [
+      "https://earth-search.aws.element84.com/v1/collections/sentinel-2-l2a/items/S2C_46PGC_20260913_0_L2A"
+    ],
+    "wasAssociatedWith": "urn:kindgrove:agent:application-package"
+  },
+  {
+    "id": "urn:kindgrove:item:mangrove-analysis-20260919-161129",
+    "provType": "prov:Entity",
+    "name": "Mangrove analysis output (STAC item)",
+    "generatedAtTime": "2026-09-19T16:11:29.425434Z",
+    "wasGeneratedBy": "urn:kindgrove:activity:mangrove-biomass-analysis:mangrove-analysis-20260919-161129",
+    "wasDerivedFrom": [
+      "https://earth-search.aws.element84.com/v1/collections/sentinel-2-l2a/items/S2C_46PGC_20260913_0_L2A"
+    ],
+    "wasAttributedTo": "urn:kindgrove:agent:application-package",
+    "mangrove_area_ha": 170.91,
+    "biomass_tons": 1454.0458692069108,
+    "carbon_tons": 683.401558527248,
+    "fingerprint:root": "433e386d348a20d045cbb0a9663cf4d1958aa1cdb2a69259c49f8e5148405db7",
+    "fingerprint:dggrs": "https://www.opengis.net/def/dggrs/OGC/1.0/rHEALPix",
+    "fingerprint:zone_level": 11,
+    "fingerprint:zone_count": 174881,
+    "fingerprint:profile": "529e59bf3e91e8cbd9dc5190eb9733aef36e8ddc77587f1a9c19ca5e50885807"
+  },
+  {
+    "id": "urn:kindgrove:item:mangrove-analysis-20260919-161129#mangrove_mask_tif",
+    "provType": "prov:Entity",
+    "name": "Mangrove detection mask",
+    "mediaType": "image/tiff",
+    "wasGeneratedBy": "urn:kindgrove:activity:mangrove-biomass-analysis:mangrove-analysis-20260919-161129",
+    "wasDerivedFrom": [
+      "https://earth-search.aws.element84.com/v1/collections/sentinel-2-l2a/items/S2C_46PGC_20260913_0_L2A"
+    ],
+    "hadPrimarySource": "urn:kindgrove:item:mangrove-analysis-20260919-161129",
+    "fingerprint:root": "06006b6bf9f88474a9d1d5d0e3ff206e300988b0d7af4386303fbb8579cc4dbc",
+    "fingerprint:dggrs": "https://www.opengis.net/def/dggrs/OGC/1.0/rHEALPix",
+    "fingerprint:zone_level": 11,
+    "fingerprint:zone_count": 739,
+    "fingerprint:profile": "529e59bf3e91e8cbd9dc5190eb9733aef36e8ddc77587f1a9c19ca5e50885807"
+  },
+  {
+    "id": "urn:kindgrove:activity:fingerprint:mangrove-analysis-20260919-161129",
+    "provType": "prov:Activity",
+    "name": "Fingerprinting (STAC Fingerprint extension)",
+    "processType": [
+      "identification"
+    ],
+    "used": [
+      "urn:kindgrove:item:mangrove-analysis-20260919-161129",
+      "urn:kindgrove:item:mangrove-analysis-20260919-161129#mangrove_mask_tif"
+    ],
+    "wasInformedBy": "urn:kindgrove:activity:mangrove-biomass-analysis:mangrove-analysis-20260919-161129",
+    "wasAssociatedWith": "urn:kindgrove:agent:stac-fingerprint"
+  },
+  {
+    "id": "urn:kindgrove:agent:application-package",
+    "provType": "prov:SoftwareAgent",
+    "name": "KindGrove mangrove biomass OGC Application Package",
+    "softwareVersion": "0.2.0",
+    "url": "https://github.com/starling-foundries/KindGrove/blob/main/mangrove_workflow_ogc_application_package.cwl",
+    "actedOnBehalfOf": "urn:kindgrove:agent:starling-foundries"
+  },
+  {
+    "id": "urn:kindgrove:agent:stac-fingerprint",
+    "provType": "prov:SoftwareAgent",
+    "name": "stac-fingerprint 0.3.0 (burin-core)",
+    "url": "https://github.com/starling-foundries/burin-core",
+    "actedOnBehalfOf": "urn:kindgrove:agent:starling-foundries"
+  },
+  {
+    "id": "urn:kindgrove:agent:starling-foundries",
+    "provType": "prov:Organization",
+    "name": "Starling Foundries"
+  }
+]

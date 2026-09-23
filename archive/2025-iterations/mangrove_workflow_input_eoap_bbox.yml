@@ -1,0 +1,11 @@
+# Sample input for mangrove analysis workflow
+# Coordinates for Ayeyarwady Region, Myanmar
+# Bounding box format: [west, south, east, north]
+
+bounding_box:
+  class: "https://raw.githubusercontent.com/eoap/schemas/0.2.0/ogc.yaml#BBox"
+  bbox: [94.5, 15.7, 95.5, 16.7]
+  crs: "CRS84"
+cloud_cover_max: 20
+days_back: 90
+output_directory: outputs

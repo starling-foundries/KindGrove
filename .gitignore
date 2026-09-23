@@ -1,0 +1,80 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Jupyter
+.ipynb_checkpoints/
+*/.ipynb_checkpoints/*
+.jupyter_ystore.db
+*.ipynb.invalid
+
+# Marimo
+__marimo__/
+
+# Data files (large satellite imagery)
+*.tif
+*.tiff
+*.hdf
+*.nc
+data/
+data_cache/
+
+# Outputs and intermediate results
+*.csv
+outputs/
+results/
+mangrove_workflow_preview.html
+
+# Debug/intermediate data
+stac_data_capture/
+mangrove_assessment_results.json
+STAC_DATA_FLOW.json
+execute.json
+
+# Linting cache
+.ruff_cache/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+.envrc
+
+# Archive (large historical notebooks)
+archive/
+
+# Source utilities (local development)
+src/
+
+# built wheels for the annotate image (build with maturin, see docs/CWL_README.md)
+cwl/wheels/

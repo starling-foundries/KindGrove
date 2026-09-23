@@ -1,0 +1,11 @@
+# Example parameters for Mangrove Biomass Workflow
+# Study site: Thor Heyerdahl Climate Park, Myanmar
+# Location: Ayeyarwady Delta mangrove restoration area
+
+study_area_west: 95.15
+study_area_south: 15.9
+study_area_east: 95.35
+study_area_north: 16.1
+cloud_cover_max: 20
+days_back: 90
+output_directory: outputs

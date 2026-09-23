@@ -1,0 +1,294 @@
+{
+ "scene": "S2B_45QYE_20241216_0_L2A",
+ "area_ha": 54332.24850532885,
+ "level": 11,
+ "entry_pct": 100.01503566418354,
+ "entry_iou": 0.9989555231307014,
+ "root": "3c0a4223e6d9ee504e2af52a1a1b2c515cf5dd032c5d2263e52796494579f606",
+ "bulk": [
+  {
+   "hop": 0,
+   "area_pct": 100.0,
+   "iou": 1.0,
+   "crs": "EPSG:4326"
+  },
+  {
+   "hop": 1,
+   "area_pct": 100.26310616365735,
+   "crs": "EPSG:32645",
+   "res": 30.0
+  },
+  {
+   "hop": 2,
+   "area_pct": 99.99994997218487,
+   "crs": "EPSG:4326",
+   "res": 0.0005,
+   "iou": 1.0,
+   "lost": 0,
+   "gained": 0
+  },
+  {
+   "hop": 3,
+   "area_pct": 100.64096107658283,
+   "crs": "EPSG:3857",
+   "res": 60.0
+  },
+  {
+   "hop": 4,
+   "area_pct": 99.91779230569063,
+   "crs": "EPSG:4326",
+   "res": 0.00045,
+   "iou": 0.9669232358714743,
+   "lost": 3259,
+   "gained": 3144
+  },
+  {
+   "hop": 5,
+   "area_pct": 100.16288943878786,
+   "crs": "EPSG:32645",
+   "res": 50.0
+  },
+  {
+   "hop": 6,
+   "area_pct": 99.88493531217843,
+   "crs": "EPSG:4326",
+   "res": 0.0005,
+   "iou": 0.948204702797919,
+   "lost": 5263,
+   "gained": 4852
+  },
+  {
+   "hop": 7,
+   "area_pct": 100.46770224893193,
+   "crs": "EPSG:3857",
+   "res": 40.0
+  },
+  {
+   "hop": 8,
+   "area_pct": 99.58731514715497,
+   "crs": "EPSG:4326",
+   "res": 0.0009,
+   "iou": 0.9430643569167191,
+   "lost": 6049,
+   "gained": 5083
+  },
+  {
+   "hop": 9,
+   "area_pct": 99.84501192635054,
+   "crs": "EPSG:32645",
+   "res": 30.0
+  },
+  {
+   "hop": 10,
+   "area_pct": 99.62293526004767,
+   "crs": "EPSG:4326",
+   "res": 0.0005,
+   "iou": 0.9404360530456283,
+   "lost": 6340,
+   "gained": 5320
+  },
+  {
+   "hop": 11,
+   "area_pct": 100.22187521413717,
+   "crs": "EPSG:3857",
+   "res": 60.0
+  },
+  {
+   "hop": 12,
+   "area_pct": 99.53368669440901,
+   "crs": "EPSG:4326",
+   "res": 0.00045,
+   "iou": 0.9252566339365415,
+   "lost": 8005,
+   "gained": 6732
+  },
+  {
+   "hop": 13,
+   "area_pct": 99.82607289790413,
+   "crs": "EPSG:32645",
+   "res": 50.0
+  },
+  {
+   "hop": 14,
+   "area_pct": 99.58249382674056,
+   "crs": "EPSG:4326",
+   "res": 0.0005,
+   "iou": 0.9205094755577129,
+   "lost": 8385,
+   "gained": 7336
+  },
+  {
+   "hop": 15,
+   "area_pct": 100.31844571672278,
+   "crs": "EPSG:3857",
+   "res": 40.0
+  },
+  {
+   "hop": 16,
+   "area_pct": 99.75070644165231,
+   "crs": "EPSG:4326",
+   "res": 0.0009,
+   "iou": 0.9242260701236971,
+   "lost": 8052,
+   "gained": 6901
+  },
+  {
+   "hop": 17,
+   "area_pct": 100.04047595171585,
+   "crs": "EPSG:32645",
+   "res": 30.0
+  },
+  {
+   "hop": 18,
+   "area_pct": 99.78151985230225,
+   "crs": "EPSG:4326",
+   "res": 0.0005,
+   "iou": 0.92316575329977,
+   "lost": 8168,
+   "gained": 7002
+  },
+  {
+   "hop": 19,
+   "area_pct": 100.26622552865497,
+   "crs": "EPSG:3857",
+   "res": 60.0
+  },
+  {
+   "hop": 20,
+   "area_pct": 99.57323618316833,
+   "crs": "EPSG:4326",
+   "res": 0.00045,
+   "iou": 0.9173228147616908,
+   "lost": 8807,
+   "gained": 7563
+  }
+ ],
+ "container": [
+  {
+   "op": 0,
+   "name": "fingerprinted (the one crossing)",
+   "root": "3c0a4223e6d9ee504e2af52a1a1b2c515cf5dd032c5d2263e52796494579f606",
+   "zones": 200593
+  },
+  {
+   "op": 1,
+   "name": "union with itself",
+   "root": "3c0a4223e6d9ee504e2af52a1a1b2c515cf5dd032c5d2263e52796494579f606",
+   "zones": 200593
+  },
+  {
+   "op": 2,
+   "name": "intersect with the survey box",
+   "root": "3c0a4223e6d9ee504e2af52a1a1b2c515cf5dd032c5d2263e52796494579f606",
+   "zones": 200593
+  },
+  {
+   "op": 3,
+   "name": "difference with empty",
+   "root": "3c0a4223e6d9ee504e2af52a1a1b2c515cf5dd032c5d2263e52796494579f606",
+   "zones": 200593
+  },
+  {
+   "op": 4,
+   "name": "zone list round trip",
+   "root": "3c0a4223e6d9ee504e2af52a1a1b2c515cf5dd032c5d2263e52796494579f606",
+   "zones": 200593
+  },
+  {
+   "op": 5,
+   "name": "union with the intersection",
+   "root": "3c0a4223e6d9ee504e2af52a1a1b2c515cf5dd032c5d2263e52796494579f606",
+   "zones": 200593
+  },
+  {
+   "op": 6,
+   "name": "union with itself",
+   "root": "3c0a4223e6d9ee504e2af52a1a1b2c515cf5dd032c5d2263e52796494579f606",
+   "zones": 200593
+  },
+  {
+   "op": 7,
+   "name": "intersect with the survey box",
+   "root": "3c0a4223e6d9ee504e2af52a1a1b2c515cf5dd032c5d2263e52796494579f606",
+   "zones": 200593
+  },
+  {
+   "op": 8,
+   "name": "difference with empty",
+   "root": "3c0a4223e6d9ee504e2af52a1a1b2c515cf5dd032c5d2263e52796494579f606",
+   "zones": 200593
+  },
+  {
+   "op": 9,
+   "name": "zone list round trip",
+   "root": "3c0a4223e6d9ee504e2af52a1a1b2c515cf5dd032c5d2263e52796494579f606",
+   "zones": 200593
+  },
+  {
+   "op": 10,
+   "name": "union with the intersection",
+   "root": "3c0a4223e6d9ee504e2af52a1a1b2c515cf5dd032c5d2263e52796494579f606",
+   "zones": 200593
+  },
+  {
+   "op": 11,
+   "name": "union with itself",
+   "root": "3c0a4223e6d9ee504e2af52a1a1b2c515cf5dd032c5d2263e52796494579f606",
+   "zones": 200593
+  },
+  {
+   "op": 12,
+   "name": "intersect with the survey box",
+   "root": "3c0a4223e6d9ee504e2af52a1a1b2c515cf5dd032c5d2263e52796494579f606",
+   "zones": 200593
+  },
+  {
+   "op": 13,
+   "name": "difference with empty",
+   "root": "3c0a4223e6d9ee504e2af52a1a1b2c515cf5dd032c5d2263e52796494579f606",
+   "zones": 200593
+  },
+  {
+   "op": 14,
+   "name": "zone list round trip",
+   "root": "3c0a4223e6d9ee504e2af52a1a1b2c515cf5dd032c5d2263e52796494579f606",
+   "zones": 200593
+  },
+  {
+   "op": 15,
+   "name": "union with the intersection",
+   "root": "3c0a4223e6d9ee504e2af52a1a1b2c515cf5dd032c5d2263e52796494579f606",
+   "zones": 200593
+  },
+  {
+   "op": 16,
+   "name": "union with itself",
+   "root": "3c0a4223e6d9ee504e2af52a1a1b2c515cf5dd032c5d2263e52796494579f606",
+   "zones": 200593
+  },
+  {
+   "op": 17,
+   "name": "intersect with the survey box",
+   "root": "3c0a4223e6d9ee504e2af52a1a1b2c515cf5dd032c5d2263e52796494579f606",
+   "zones": 200593
+  },
+  {
+   "op": 18,
+   "name": "difference with empty",
+   "root": "3c0a4223e6d9ee504e2af52a1a1b2c515cf5dd032c5d2263e52796494579f606",
+   "zones": 200593
+  },
+  {
+   "op": 19,
+   "name": "zone list round trip",
+   "root": "3c0a4223e6d9ee504e2af52a1a1b2c515cf5dd032c5d2263e52796494579f606",
+   "zones": 200593
+  },
+  {
+   "op": 20,
+   "name": "union with the intersection",
+   "root": "3c0a4223e6d9ee504e2af52a1a1b2c515cf5dd032c5d2263e52796494579f606",
+   "zones": 200593
+  }
+ ]
+}

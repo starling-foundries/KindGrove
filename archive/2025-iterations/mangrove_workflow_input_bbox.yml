@@ -1,0 +1,8 @@
+# Sample input for mangrove analysis workflow
+# Coordinates for Ayeyarwady Region, Myanmar
+# Bounding box format: [west, south, east, north]
+
+bounding_box: [94.5, 15.7, 95.5, 16.7]
+cloud_cover_max: 20
+days_back: 90
+output_directory: outputs

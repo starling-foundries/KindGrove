@@ -1,0 +1,48 @@
+{
+  "type": "Collection",
+  "stac_version": "1.1.0",
+  "id": "mangrove-results",
+  "stac_extensions": [
+    "https://starling-foundries.github.io/stac-fingerprint/v0.1.0/schema.json"
+  ],
+  "description": "Mangrove biomass analysis outputs. Coverage roots on every item; the collection root is the union of the item roots.",
+  "license": "MIT",
+  "extent": {
+    "spatial": {
+      "bbox": [
+        [
+          95.15,
+          15.9,
+          95.35,
+          16.1
+        ]
+      ]
+    },
+    "temporal": {
+      "interval": [
+        [
+          "2025-12-01T00:00:00Z",
+          null
+        ]
+      ]
+    }
+  },
+  "summaries": {
+    "coverage:resolution": [
+      11
+    ]
+  },
+  "links": [
+    {
+      "rel": "item",
+      "href": "./item.json",
+      "type": "application/geo+json",
+      "coverage:root": "029807fb8687bc4715ec719a4c3283d3214b56dea809497a93e83b8e6b3366d3"
+    }
+  ],
+  "fingerprint:root": "433e386d348a20d045cbb0a9663cf4d1958aa1cdb2a69259c49f8e5148405db7",
+  "fingerprint:dggrs": "https://www.opengis.net/def/dggrs/OGC/1.0/rHEALPix",
+  "fingerprint:zone_level": 11,
+  "fingerprint:zone_count": 174881,
+  "fingerprint:profile": "529e59bf3e91e8cbd9dc5190eb9733aef36e8ddc77587f1a9c19ca5e50885807"
+}

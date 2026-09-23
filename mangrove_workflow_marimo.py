@@ -1,0 +1,995 @@
+import marimo
+
+__generated_with = "0.20.2"
+app = marimo.App(width="medium")
+
+with app.setup(hide_code=True):
+    import json
+    import warnings
+    from datetime import datetime
+    from pathlib import Path
+
+    import burin_core as bc
+    import geopandas as gpd
+    import marimo as mo
+    import numpy as np
+    import pandas as pd
+    import plotly.express as px
+    import plotly.graph_objects as go
+    import rasterio
+    import rioxarray
+    import stackstac
+    import earthsearch as es
+    import xarray as xr
+    from lonboard import Map, PolygonLayer
+    from plotly.subplots import make_subplots
+    from pystac_client import Client
+    from rasterio.features import shapes
+    from scipy import stats
+    from shapely.geometry import box, mapping, shape
+    from shapely.ops import unary_union
+
+    warnings.filterwarnings("ignore")
+
+
+@app.cell(hide_code=True)
+def _():
+    mo.md(r"""
+    # Mangrove Biomass Temporal Analysis
+
+    This notebook analyzes mangrove biomass change over time using Sentinel-2 satellite imagery.
+
+    **Features:**
+    - Select from study sites in the Bay of Bengal region
+    - View study area as OGC Building Block parameters (bbox, CRS)
+    - Strategic 4-point temporal sampling: Initial (2017), Pre/Post Cyclone Amphan (2020), Current (2024)
+    - Scale-independent metrics for fair comparison across scenes with variable coverage
+    - Interactive timelapse visualization
+
+    **Data Access:** Open access Sentinel-2 L2A via AWS Earth Search STAC API - no credentials required.
+    """)
+    return
+
+
+@app.cell(hide_code=True)
+def _():
+    mo.md(r"""
+    First, let's define our study sites:
+    """)
+    return
+
+
+@app.cell
+def _():
+    STUDY_SITES = {
+        "Thor Heyerdahl Climate Park": {
+            "center": (94.482, 17.063),
+            "bounds": {
+                "west": 94.462,
+                "east": 94.502,
+                "south": 17.044,
+                "north": 17.082,
+            },
+            "country": "Myanmar",
+            "description": "1,800 hectares of mangrove restoration in Ayeyarwady Delta",
+            "published_agc": None,
+        },
+        "Can Gio Biosphere Reserve": {
+            "center": (106.89, 10.52),
+            "bounds": {"west": 106.73, "east": 107.05, "south": 10.35, "north": 10.68},
+            "country": "Vietnam",
+            "description": "UNESCO Biosphere Reserve, 75,740 ha with consistent monitoring",
+            "published_agc": "Fringe: 102±24.7, Transition: 298.1±14.1, Interior: 243.6±40.4 Mg C/ha",
+        },
+        "Sundarbans": {
+            "center": (89.46, 22.0),
+            "bounds": {
+                "west": 89.325,
+                "east": 89.595,
+                "south": 21.865,
+                "north": 22.135,
+            },
+            "country": "Bangladesh/India",
+            "description": "30km × 30km subset of world's largest mangrove forest",
+            "published_agc": "24-119 Mg C/ha (salinity dependent), Mean AGB: 243.4 Mg/ha",
+        },
+        "Wunbaik Reserved Forest": {
+            "center": (94.5, 16.75),
+            "bounds": {"west": 94.3, "east": 94.7, "south": 16.6, "north": 16.9},
+            "country": "Myanmar (Rakhine State)",
+            "description": "Source region for biomass equation (250.5×NDVI - 75.2)",
+            "published_agc": "Equation source: R²=0.72 (⚠️ citation unverified)",
+        },
+    }
+    return (STUDY_SITES,)
+
+
+@app.cell(hide_code=True)
+def _():
+    mo.md(r"""
+    Select a study site:
+    """)
+    return
+
+
+@app.cell(hide_code=True)
+def _(STUDY_SITES):
+    site_dropdown = mo.ui.dropdown(
+        options=list(STUDY_SITES.keys()),
+        value="Can Gio Biosphere Reserve",  # Default to site with best coverage
+        label="Study Site:",
+    )
+    site_dropdown  # noqa: B018
+    return (site_dropdown,)
+
+
+@app.cell(hide_code=True)
+def _(STUDY_SITES, site_dropdown):
+    selected_site = site_dropdown.value
+    site_info = STUDY_SITES[selected_site]
+    _bounds = site_info["bounds"]
+
+    # OGC Building Block style display
+    bbox_yaml = f"""```yaml
+    # OGC Building Block Parameters
+    bbox:
+      west: {_bounds["west"]}
+      south: {_bounds["south"]}
+      east: {_bounds["east"]}
+      north: {_bounds["north"]}
+    crs: EPSG:4326
+    collection: sentinel-2-l2a
+    ```"""
+
+    published_info = ""
+    if site_info.get("published_agc"):
+        published_info = f"\n**Published AGC:** {site_info['published_agc']}"
+
+    mo.md(
+        f"""
+    ## {selected_site}
+
+    **Location:** {site_info['country']}
+
+    **Description:** {site_info['description']}{published_info}
+
+    {bbox_yaml}
+    """
+    )
+    return selected_site, site_info
+
+
+@app.cell(hide_code=True)
+def _(selected_site, site_info):
+    # Create lonboard map showing study area
+    _bounds = site_info["bounds"]
+    _bbox_polygon = box(
+        _bounds["west"], _bounds["south"], _bounds["east"], _bounds["north"]
+    )
+
+    _bbox_gdf = gpd.GeoDataFrame(
+        {"name": [selected_site], "type": ["study_area"]},
+        geometry=[_bbox_polygon],
+        crs="EPSG:4326",
+    )
+
+    _layer = PolygonLayer.from_geopandas(
+        _bbox_gdf,
+        get_fill_color=[100, 180, 100, 80],  # Semi-transparent green
+        get_line_color=[0, 120, 0, 255],  # Dark green border
+        line_width_min_pixels=3,
+    )
+
+    _center = site_info["center"]
+    # Calculate zoom based on bbox size
+    _lon_span = _bounds["east"] - _bounds["west"]
+    _lat_span = _bounds["north"] - _bounds["south"]
+    _max_span = max(_lon_span, _lat_span)
+    _zoom = max(1, min(14, 9 - np.log2(_max_span + 0.01)))
+
+    _view_state = {
+        "longitude": _center[0],
+        "latitude": _center[1],
+        "zoom": _zoom,
+    }
+
+    _study_area_map = Map(_layer, view_state=_view_state)
+    _study_area_map  # noqa: B018
+    return
+
+
+@app.cell(hide_code=True)
+def _():
+    mo.md(r"""
+    ---
+    ## Temporal Analysis Configuration
+
+    Configure the temporal sampling parameters:
+    """)
+    return
+
+
+@app.cell(hide_code=True)
+def _():
+    max_cloud_cover = mo.ui.slider(
+        10, 50, value=30, step=5, label="Max Cloud Cover (%):", show_value=True
+    )
+    max_cloud_cover  # noqa: B018
+    return (max_cloud_cover,)
+
+
+@app.cell(hide_code=True)
+def _():
+    mo.md(r"""
+    Temporal analysis samples **4 key points** from Sentinel-2's operational history:
+    - **Initial** (2017): First available low-cloud scene
+    - **Pre-Cyclone Amphan** (May 1-19, 2020): Before landfall
+    - **Post-Cyclone Amphan** (June 5+, 2020): After impact
+    - **Current** (2024): Most recent measurement
+
+    Cyclone Amphan made landfall May 20, 2020 - one of the strongest cyclones to impact the Bay of Bengal.
+    """)
+    return
+
+
+@app.cell(hide_code=True)
+def _():
+    load_temporal_button = mo.ui.run_button(label="🛰️ Load Temporal Data (~2-3 min)")
+    load_temporal_button  # noqa: B018
+    return (load_temporal_button,)
+
+
+@app.cell
+def _(load_temporal_button, max_cloud_cover, selected_site, site_info):
+    mo.stop(
+        not load_temporal_button.value,
+        mo.md("*Click 'Load Temporal Data' to begin temporal analysis*"),
+    )
+
+    # 4 strategic time windows: Initial, Pre/Post Cyclone Amphan, Current
+    # Cyclone Amphan made landfall May 20, 2020
+    _time_windows = [
+        ("Initial (2017)", "2017-01-01", "2017-12-31"),
+        ("Pre-Cyclone Amphan", "2020-05-01", "2020-05-19"),
+        ("Post-Cyclone Amphan", "2020-06-05", "2020-12-31"),
+        ("Current (2024)", "2024-01-01", "2024-12-31"),
+    ]
+
+    print("Querying 4 key time points for change detection...")
+
+    # Setup
+    _catalog = es.open_catalog()  # request timeout and retries
+    _bounds = site_info["bounds"]
+    _bbox = [_bounds["west"], _bounds["south"], _bounds["east"], _bounds["north"]]
+
+    # Cache directory for temporal data
+    _site_slug = selected_site.lower().replace(" ", "_")
+    _cache_dir = Path("data_cache") / "temporal" / _site_slug
+    _cache_dir.mkdir(parents=True, exist_ok=True)
+
+    _temporal_samples = []
+
+    for _i, (_label, _start_str, _end_str) in enumerate(_time_windows):
+        print(f"  [{_i+1}/4] {_label}: Searching...", end=" ")
+
+        _search = _catalog.search(
+            collections=["sentinel-2-l2a"],
+            bbox=_bbox,
+            datetime=f"{_start_str}/{_end_str}",
+            query={"eo:cloud_cover": {"lt": max_cloud_cover.value}},
+            limit=40,
+        )
+
+        _items = list(_search.items())
+        if not _items:
+            print("no scenes")
+            continue
+
+        # Rank candidates by how much of the study area their STAC footprint covers (5% steps),
+        # then by cloud cover: the 2025 report's first recommendation, "filter scenes by bbox
+        # overlap percentage before download", done from catalog geometry alone. Ranking by cloud
+        # alone picked 2-4% coverage scenes for the Sundarbans while full-coverage scenes existed.
+        _rank_index = bc.Index()
+        for _it in _items:
+            _rank_index.add(_it.id, bc.Tree.from_geojson(_it.geometry, 8))
+        _aoi_tree = bc.Tree.from_geojson({"type": "Polygon", "coordinates": [[[_bbox[0], _bbox[1]], [_bbox[2], _bbox[1]], [_bbox[2], _bbox[3]], [_bbox[0], _bbox[3]], [_bbox[0], _bbox[1]]]]}, 8)
+        _fraction = {h["key"]: h["fraction_of_query"] for h in _rank_index.query(_aoi_tree)}
+        _items = [it for it in _items if _fraction.get(it.id, 0.0) > 0.0]
+        _items.sort(key=lambda x: (-round(_fraction[x.id] * 20) / 20, x.properties.get("eo:cloud_cover", 100)))
+        print(f"best footprint covers {100 * _fraction[_items[0].id]:.0f}% of the bbox;", end=" ") if _items else print("no overlap")
+
+        # Try items until we find one with valid data
+        for _item in _items[:5]:  # Try up to 5 scenes per time window
+            _scene_id = _item.id
+            _scene_date = _item.datetime
+            _cloud = _item.properties.get("eo:cloud_cover", 0)
+
+            # Check scene cache
+            _scene_cache_dir = _cache_dir / _scene_id
+            _stats_file = _scene_cache_dir / "stats.json"
+
+            if _stats_file.exists():
+                # Load from cache
+                with open(_stats_file) as _f:
+                    _sample = json.load(_f)
+                    _sample["date"] = datetime.fromisoformat(_sample["date"])
+                _temporal_samples.append(_sample)
+                print(
+                    f"found {_scene_date.strftime('%Y-%m-%d')} ({_cloud:.1f}% cloud) [cached]"
+                )
+                break  # Found valid cached scene
+
+            # Download and process
+            print(f"trying {_scene_date.strftime('%Y-%m-%d')}...", end=" ")
+            _scene_cache_dir.mkdir(parents=True, exist_ok=True)
+
+            _cache_files = {
+                "red": _scene_cache_dir / "red.tif",
+                "green": _scene_cache_dir / "green.tif",
+                "nir": _scene_cache_dir / "nir.tif",
+            }
+
+            if all(_f.exists() for _f in _cache_files.values()):
+                _bands_data = {}
+                for _band_name, _filepath in _cache_files.items():
+                    with rioxarray.open_rasterio(_filepath) as _src:
+                        _bands_data[_band_name] = _src.values[0]
+            else:
+                _sentinel2_lazy = stackstac.stack(
+                    [_item],
+                    assets=["red", "green", "nir"],
+                    epsg=4326,
+                    resolution=0.0005,  # Lower res for speed (50m)
+                    bounds_latlon=_bbox,
+                    chunksize=(1, 1, 512, 512),
+                    gdal_env=es.GDAL_ENV,  # a stalled read fails within the budget instead of hanging
+                )
+                try:
+                    _data = es.with_deadline(_sentinel2_lazy.compute)
+                except Exception as _e:  # noqa: BLE001 - next candidate scene
+                    print(f"could not be fetched ({type(_e).__name__}); next candidate")
+                    continue
+
+                _bands_data = {}
+                for _band_name in ["red", "green", "nir"]:
+                    _band = _data.sel(band=_band_name)
+                    if "time" in _band.dims:
+                        _band = _band.isel(time=0)
+                    _bands_data[_band_name] = _band.values
+                    _band_xr = _band.rio.write_crs("EPSG:4326")
+                    _band_xr.rio.to_raster(_cache_files[_band_name], compress="lzw")
+
+            # Processing baseline >= 04.00 (Jan 2022) declares a BOA offset (raster:bands offset
+            # -0.1 at scale 0.0001). Earth Search delivers those scenes with the offset already
+            # removed (earthsearch:boa_offset_applied) but keeps the declaration, and stackstac's
+            # rescale applies it again, so red goes negative and NDVI overshoots. Add it back.
+            _rb = _item.assets["red"].extra_fields.get("raster:bands", [{}])[0]
+            _shift = -float(_rb.get("offset", 0.0)) if _item.properties.get("earthsearch:boa_offset_applied") else 0.0
+            if _shift:
+                _bands_data = {_k: np.where(np.isnan(_v), np.nan, _v + _shift) for _k, _v in _bands_data.items()}
+
+            # Validate scene has enough valid data (>1% non-NaN)
+            # Lower threshold allows multi-tile sites to find scenes
+            _valid_pct = np.sum(~np.isnan(_bands_data["nir"])) / _bands_data["nir"].size
+            if _valid_pct < 0.01:
+                print(f"skipped ({_valid_pct*100:.1f}% valid)")
+                import shutil
+
+                shutil.rmtree(_scene_cache_dir, ignore_errors=True)
+                continue  # Try next scene in this time window
+
+            # Calculate biomass stats
+            _red = _bands_data["red"]
+            _nir = _bands_data["nir"]
+            _ndvi = (_nir - _red) / (_nir + _red + 1e-8)
+
+            # Standard NDVI threshold for mangrove detection (literature-backed)
+            _mangrove_mask = (_ndvi > 0.4) & (_ndvi < 0.95)
+            _biomass = 250.5 * _ndvi - 75.2
+            _biomass = np.where(_mangrove_mask, _biomass, np.nan)
+            _biomass = np.maximum(_biomass, 0)
+
+            _valid_biomass = _biomass[~np.isnan(_biomass)]
+
+            _pixel_area_ha = (50 * 50) / 10000  # 50m resolution
+
+            # Coverage-aware metrics (scale-independent, comparable across scenes)
+            _valid_pixels = np.sum(~np.isnan(_bands_data["nir"]))
+            _valid_coverage_ha = _valid_pixels * _pixel_area_ha
+            _mangrove_pixels = np.sum(_mangrove_mask)
+            _mangrove_area_ha = _mangrove_pixels * _pixel_area_ha
+
+            # Mangrove fraction: % of valid observed area that is mangrove
+            # This metric IS comparable across scenes with different coverage
+            _mangrove_fraction = (
+                (_mangrove_pixels / _valid_pixels * 100) if _valid_pixels > 0 else 0
+            )
+
+            _sample = {
+                "date": _scene_date,
+                "scene_id": _scene_id,
+                "cloud_cover": _cloud,
+                "valid_coverage_ha": float(_valid_coverage_ha),
+                "valid_coverage_pct": float(_valid_pct * 100),
+                "biomass_mean": float(np.mean(_valid_biomass))
+                if len(_valid_biomass) > 0
+                else 0,
+                "biomass_std": float(np.std(_valid_biomass))
+                if len(_valid_biomass) > 0
+                else 0,
+                "mangrove_area_ha": float(_mangrove_area_ha),
+                "mangrove_fraction": float(_mangrove_fraction),
+                "carbon_stock": float(np.sum(_valid_biomass) * _pixel_area_ha * 0.47)
+                if len(_valid_biomass) > 0
+                else 0,
+                "carbon_density": float(np.mean(_valid_biomass) * 0.47)
+                if len(_valid_biomass) > 0
+                else 0,
+            }
+
+            # Save to cache
+            _cache_sample = _sample.copy()
+            _cache_sample["date"] = _sample["date"].isoformat()
+            with open(_stats_file, "w") as _f:
+                json.dump(_cache_sample, _f)
+
+            # Save biomass raster for visualization
+            _biomass_xr = xr.DataArray(_biomass, dims=["y", "x"])
+            _biomass_xr = _biomass_xr.rio.write_crs("EPSG:4326")
+            _biomass_xr.rio.to_raster(_scene_cache_dir / "biomass.tif", compress="lzw")
+
+            _temporal_samples.append(_sample)
+            print("done")
+            break  # Found valid scene, move to next time window
+
+    # Sort by date
+    _temporal_samples.sort(key=lambda x: x["date"])
+
+    print(f"\n✅ Loaded {len(_temporal_samples)} temporal samples")
+
+    # Create temporal_data structure
+    if len(_temporal_samples) >= 2:
+        _initial = _temporal_samples[0]
+        _current = _temporal_samples[-1]
+        _change_biomass = _current["biomass_mean"] - _initial["biomass_mean"]
+        _change_percent = (
+            (_change_biomass / _initial["biomass_mean"] * 100)
+            if _initial["biomass_mean"] > 0
+            else 0
+        )
+
+        # Calculate trend
+        _dates_numeric = [
+            (s["date"] - _temporal_samples[0]["date"]).days for s in _temporal_samples
+        ]
+        _biomass_values = [s["biomass_mean"] for s in _temporal_samples]
+        if len(_dates_numeric) >= 2:
+            _slope, _intercept, _r_value, _p_value, _std_err = stats.linregress(
+                _dates_numeric, _biomass_values
+            )
+            _trend_slope_per_year = _slope * 365  # Mg/ha per year
+        else:
+            _trend_slope_per_year = 0
+            _r_value = 0
+
+        temporal_data = {
+            "metadata": {
+                "site_name": selected_site,
+                "bbox": _bounds,
+                "n_samples": len(_temporal_samples),
+                "date_range": (
+                    _temporal_samples[0]["date"],
+                    _temporal_samples[-1]["date"],
+                ),
+            },
+            "samples": _temporal_samples,
+            "summary": {
+                "initial": _initial,
+                "current": _current,
+                "change_percent": _change_percent,
+                "trend_slope_per_year": _trend_slope_per_year,
+                "trend_r2": _r_value**2,
+            },
+        }
+    else:
+        temporal_data = None
+        mo.stop(True, mo.md("**Error:** Need at least 2 samples for temporal analysis"))
+    return (temporal_data,)
+
+
+@app.cell(hide_code=True)
+def _():
+    mo.md(r"""
+    ---
+    ## Timelapse Visualization
+
+    Use the slider to step through temporal samples, or click Play for automatic animation:
+    """)
+    return
+
+
+@app.cell(hide_code=True)
+def _(temporal_data):
+    n_samples = len(temporal_data["samples"]) if temporal_data else 1
+    time_slider = mo.ui.slider(
+        0, max(0, n_samples - 1), value=0, step=1, label="Time Step:", show_value=True
+    )
+    time_slider  # noqa: B018
+    return (time_slider,)
+
+
+@app.cell(hide_code=True)
+def _(selected_site, temporal_data, time_slider):
+    mo.stop(temporal_data is None, mo.md("*Load temporal data first*"))
+
+    _idx = time_slider.value
+    _sample = temporal_data["samples"][_idx]
+    _date_str = _sample["date"].strftime("%Y-%m-%d")
+
+    # Load biomass raster for this sample
+    _site_slug = selected_site.lower().replace(" ", "_")
+    _biomass_path = (
+        Path("data_cache")
+        / "temporal"
+        / _site_slug
+        / _sample["scene_id"]
+        / "biomass.tif"
+    )
+
+    if _biomass_path.exists():
+        with rioxarray.open_rasterio(_biomass_path) as _src:
+            _biomass_raster = _src.values[0]
+
+        # Downsample for display (max 400x400 to stay under marimo limit)
+        _max_dim = 400
+        _h, _w = _biomass_raster.shape
+        if _h > _max_dim or _w > _max_dim:
+            _scale = min(_max_dim / _h, _max_dim / _w)
+            _new_h, _new_w = int(_h * _scale), int(_w * _scale)
+            from scipy.ndimage import zoom
+
+            _biomass_display = zoom(
+                _biomass_raster, (_new_h / _h, _new_w / _w), order=0
+            )
+        else:
+            _biomass_display = _biomass_raster
+
+        # Create Plotly heatmap (NaN shows as transparent)
+        _coverage_pct = _sample.get("valid_coverage_pct", 0)
+        _mangrove_frac = _sample.get("mangrove_fraction", 0)
+        _fig = px.imshow(
+            _biomass_display,
+            color_continuous_scale="YlGn",
+            labels={"color": "Biomass (Mg/ha)"},
+            title=f"Biomass: {_date_str} | Mean: {_sample['biomass_mean']:.1f} Mg/ha | Coverage: {_coverage_pct:.0f}% | Mangrove: {_mangrove_frac:.1f}%",
+        )
+        _fig.update_layout(
+            height=500,
+            coloraxis_colorbar={"title": "Biomass<br>(Mg/ha)"},
+        )
+        _fig.update_xaxes(showticklabels=False)
+        _fig.update_yaxes(showticklabels=False)
+        mo.output.replace(mo.ui.plotly(_fig))
+    else:
+        mo.output.replace(mo.md(f"*Biomass raster not found for {_date_str}*"))
+    return
+
+
+@app.cell(hide_code=True)
+def _():
+    mo.md(r"""
+    ---
+    ## Temporal Trend Analysis
+
+    Time series showing biomass change over the study period with trend line:
+    """)
+    return
+
+
+@app.cell(hide_code=True)
+def _(temporal_data):
+    mo.stop(temporal_data is None, mo.md("*Load temporal data first*"))
+
+    _samples = temporal_data["samples"]
+    _dates = [s["date"] for s in _samples]
+    _biomass_values = [s["biomass_mean"] for s in _samples]
+    _area_values = [s["mangrove_area_ha"] for s in _samples]
+
+    # Calculate trend line
+    _dates_numeric = [(_d - _dates[0]).days for _d in _dates]
+    _slope, _intercept, _r_value, _p_value, _std_err = stats.linregress(
+        _dates_numeric, _biomass_values
+    )
+    _trend_line = [_slope * x + _intercept for x in _dates_numeric]
+
+    # Create figure with secondary y-axis
+    _fig = make_subplots(specs=[[{"secondary_y": True}]])
+
+    # Biomass time series
+    _fig.add_trace(
+        go.Scatter(
+            x=_dates,
+            y=_biomass_values,
+            mode="markers+lines",
+            name="Mean Biomass",
+            marker={"size": 10, "color": "green"},
+            line={"width": 1, "color": "lightgreen"},
+        ),
+        secondary_y=False,
+    )
+
+    # Trend line
+    _fig.add_trace(
+        go.Scatter(
+            x=_dates,
+            y=_trend_line,
+            mode="lines",
+            name=f"Trend (R²={_r_value**2:.2f})",
+            line={"width": 2, "color": "red", "dash": "dash"},
+        ),
+        secondary_y=False,
+    )
+
+    # Mangrove area on secondary axis
+    _fig.add_trace(
+        go.Scatter(
+            x=_dates,
+            y=_area_values,
+            mode="markers+lines",
+            name="Mangrove Area",
+            marker={"size": 8, "color": "blue", "symbol": "square"},
+            line={"width": 1, "color": "lightblue"},
+        ),
+        secondary_y=True,
+    )
+
+    _fig.update_layout(
+        title="Mangrove Biomass and Area Over Time",
+        height=450,
+        template="plotly_white",
+        legend={"yanchor": "top", "y": 0.99, "xanchor": "left", "x": 0.01},
+    )
+    _fig.update_xaxes(title_text="Date")
+    _fig.update_yaxes(title_text="Mean Biomass (Mg/ha)", secondary_y=False)
+    _fig.update_yaxes(title_text="Mangrove Area (ha)", secondary_y=True)
+
+    mo.ui.plotly(_fig)
+    return
+
+
+@app.cell(hide_code=True)
+def _():
+    mo.md(r"""
+    ---
+    ## Change Summary: Initial vs Current
+
+    Comparison of biomass and carbon metrics between the first and most recent measurements:
+    """)
+    return
+
+
+@app.cell(hide_code=True)
+def _(selected_site, temporal_data):
+    mo.stop(temporal_data is None, mo.md("*Load temporal data first*"))
+
+    _summary = temporal_data["summary"]
+    _initial = _summary["initial"]
+    _current = _summary["current"]
+
+    # Calculate changes using SCALE-INDEPENDENT metrics
+    _biomass_change = _current["biomass_mean"] - _initial["biomass_mean"]
+    _fraction_change = _current.get("mangrove_fraction", 0) - _initial.get(
+        "mangrove_fraction", 0
+    )
+    _carbon_density_change = _current.get("carbon_density", 0) - _initial.get(
+        "carbon_density", 0
+    )
+
+    # Determine trend based on biomass (scale-independent)
+    _trend_direction = "📈 GROWTH" if _biomass_change > 0 else "📉 DECLINE"
+
+    # Create comparison table with SCALE-INDEPENDENT metrics
+    # These metrics are comparable even when scenes have different spatial coverage
+    _comparison_df = pd.DataFrame(
+        [
+            {
+                "Metric": "Date",
+                "Initial": _initial["date"].strftime("%Y-%m-%d"),
+                "Current": _current["date"].strftime("%Y-%m-%d"),
+                "Change": f"{(_current['date'] - _initial['date']).days} days",
+            },
+            {
+                "Metric": "Scene Coverage (%)",
+                "Initial": f"{_initial.get('valid_coverage_pct', 0):.1f}%",
+                "Current": f"{_current.get('valid_coverage_pct', 0):.1f}%",
+                "Change": "⚠️ Variable coverage",
+            },
+            {
+                "Metric": "Mean Biomass (Mg/ha)",
+                "Initial": f"{_initial['biomass_mean']:.1f}",
+                "Current": f"{_current['biomass_mean']:.1f}",
+                "Change": f"{_biomass_change:+.1f} ({_summary['change_percent']:+.1f}%)",
+            },
+            {
+                "Metric": "Mangrove Fraction (%)",
+                "Initial": f"{_initial.get('mangrove_fraction', 0):.1f}%",
+                "Current": f"{_current.get('mangrove_fraction', 0):.1f}%",
+                "Change": f"{_fraction_change:+.1f}%",
+            },
+            {
+                "Metric": "Carbon Density (Mg C/ha)",
+                "Initial": f"{_initial.get('carbon_density', 0):.1f}",
+                "Current": f"{_current.get('carbon_density', 0):.1f}",
+                "Change": f"{_carbon_density_change:+.1f}",
+            },
+        ]
+    )
+
+    mo.vstack(
+        [
+            mo.md(f"### {selected_site}"),
+            mo.md(f"**Overall Trend: {_trend_direction}**"),
+            mo.md(
+                f"**Trend Rate:** {_summary['trend_slope_per_year']:.2f} Mg/ha per year (R²={_summary['trend_r2']:.2f})"
+            ),
+            mo.ui.table(_comparison_df, selection=None),
+        ]
+    )
+    return
+
+
+@app.cell
+def _():
+    return
+
+
+@app.cell(hide_code=True)
+def _():
+    mo.md(r"""
+    ---
+    ## Fingerprints
+
+    Each scene's valid-data footprint and its mangrove footprint become **32-byte roots** on the equal-area
+    rHEALPix grid (the OGC API-DGGS Annex B profile, via `burin-core`): a deterministic fingerprint of *what ground
+    the scene covers*, independent of file format, tiling or compression. The comparable region for the whole
+    time series is then **computed**, as the intersection of the valid footprints, rather than assumed; the
+    mangrove share of that region is the number that means the same thing on every date. Scenes from the same
+    Sentinel-2 tile produce footprint roots that agree to the byte.
+    """)
+    return
+
+
+@app.cell(hide_code=True)
+def _(selected_site, site_info, temporal_data):
+    mo.stop(temporal_data is None, mo.md("*Load temporal data first*"))
+
+    _RESOLUTION = 10
+    _ESRI_IMAGERY = "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+    _site_dir = Path("data_cache") / "temporal" / selected_site.lower().replace(" ", "_")
+
+    def _footprint(array, transform):
+        """The non-empty extent of a raster as GeoJSON: the union of its valid pixels."""
+        _mask = ~np.isnan(array) & (array > 0)
+        _polys = [
+            shape(_g)
+            for _g, _v in shapes(_mask.astype("uint8"), mask=_mask, transform=transform)
+            if _v == 1
+        ]
+        return mapping(unary_union(_polys)) if _polys else {"type": "MultiPolygon", "coordinates": []}
+
+    # One valid-data tree and one mangrove tree per cached scene (skip scenes whose rasters are missing)
+    _scenes = []
+    for _sample in temporal_data["samples"]:
+        _nir_path = _site_dir / _sample["scene_id"] / "nir.tif"
+        _bio_path = _site_dir / _sample["scene_id"] / "biomass.tif"
+        if not (_nir_path.exists() and _bio_path.exists()):
+            continue
+        with rasterio.open(_nir_path) as _src:
+            _nir, _transform = _src.read(1), _src.transform
+        with rasterio.open(_bio_path) as _src:
+            _bio = _src.read(1)
+        _scenes.append(
+            {
+                "sample": _sample,
+                "valid": bc.Tree.from_geojson(
+                    _footprint(np.where(np.isnan(_nir), 0.0, 1.0), _transform), _RESOLUTION
+                ),
+                "mangrove": bc.Tree.from_geojson(_footprint(_bio, _transform), _RESOLUTION),
+            }
+        )
+
+    coverage_roots = {
+        _s["sample"]["scene_id"]: {
+            "footprint_root": _s["valid"].root_hex,
+            "mangrove_root": _s["mangrove"].root_hex,
+        }
+        for _s in _scenes
+    }
+
+    # The comparable region: intersection of every scene's valid-data footprint
+    _comparable = _scenes[0]["valid"] if _scenes else bc.Tree.from_geojson(
+        {"type": "MultiPolygon", "coordinates": []}, _RESOLUTION
+    )
+    for _s in _scenes[1:]:
+        _comparable = _comparable.intersect(_s["valid"])
+    _n_comparable = max(_comparable.leaf_count(), 1)
+    _km2 = _comparable.leaf_count() * bc.cell_area_m2(_RESOLUTION) / 1e6
+
+    _roots_df = pd.DataFrame(
+        [
+            {
+                "Date": _s["sample"]["date"].strftime("%Y-%m-%d"),
+                "Scene": _s["sample"]["scene_id"],
+                "Coverage (%)": round(_s["sample"].get("valid_coverage_pct", 0), 1),
+                "Footprint Root": _s["valid"].root_hex[:12] + "…",
+                "Mangrove (% of scene)": round(
+                    100 * _s["mangrove"].leaf_count() / max(_s["valid"].leaf_count(), 1), 1
+                ),
+                "Mangrove (% of comparable region)": round(
+                    100 * _s["mangrove"].intersect(_comparable).leaf_count() / _n_comparable, 1
+                ),
+            }
+            for _s in _scenes
+        ]
+    )
+
+    # Map: comparable region cells over satellite imagery, with the study bbox outline
+    _b = site_info["bounds"]
+    _bbox_ring = [
+        [_b["west"], _b["south"]],
+        [_b["east"], _b["south"]],
+        [_b["east"], _b["north"]],
+        [_b["west"], _b["north"]],
+        [_b["west"], _b["south"]],
+    ]
+    _traces = []
+    _cids = _comparable.cells()
+    if _cids:
+        _gj = bc.cells_geojson(_cids)
+        _ids = [_f["id"] for _f in _gj["features"]]
+        _traces.append(
+            go.Choroplethmap(
+                geojson=_gj,
+                locations=_ids,
+                z=[1] * len(_ids),
+                zmin=0,
+                zmax=1,
+                colorscale=[[0, "#ffffff"], [1, "#ffffff"]],
+                showscale=False,
+                marker={"opacity": 0.5, "line": {"width": 0.2, "color": "white"}},
+                name="comparable region (intersection)",
+                text=[_f["properties"]["suid"] for _f in _gj["features"]],
+                hovertemplate="%{text}<extra>comparable region</extra>",
+            )
+        )
+    _traces.append(
+        go.Scattermap(
+            lon=[_c[0] for _c in _bbox_ring],
+            lat=[_c[1] for _c in _bbox_ring],
+            mode="lines",
+            line={"width": 2.5, "color": "#ffffff"},
+            name="study area bbox",
+            hoverinfo="skip",
+        )
+    )
+    _span = max(_b["east"] - _b["west"], (_b["north"] - _b["south"]) * 1.4)
+    _fig = go.Figure(data=_traces)
+    _fig.update_layout(
+        map={
+            "style": "white-bg",
+            "layers": [{"below": "traces", "sourcetype": "raster", "source": [_ESRI_IMAGERY]}],
+            "center": {
+                "lon": (_b["west"] + _b["east"]) / 2,
+                "lat": (_b["south"] + _b["north"]) / 2,
+            },
+            "zoom": float(np.log2(360.0 / _span)) - 0.6,
+        },
+        margin={"l": 0, "r": 0, "t": 0, "b": 0},
+        height=520,
+        legend={"x": 0.01, "y": 0.99, "bgcolor": "rgba(255,255,255,0.8)"},
+    )
+
+    mo.vstack(
+        [
+            mo.ui.table(_roots_df, selection=None),
+            mo.ui.plotly(_fig),
+            mo.md(
+                f"**Comparable region:** {_comparable.leaf_count():,} zones at level {_RESOLUTION} "
+                f"({_km2:,.1f} km²), root `{_comparable.root_hex}`"
+            ),
+        ]
+    ) if _scenes else mo.md("*No cached scene rasters found for fingerprints*")
+    return (coverage_roots,)
+
+
+@app.cell(hide_code=True)
+def _():
+    mo.md(r"""
+    ---
+    ## Methodology
+
+    **Mangrove Detection:** NDVI threshold `0.4 < NDVI < 0.95`
+    - Lower bound (0.4) excludes water, bare soil, and sparse vegetation
+    - Upper bound (0.95) avoids sensor saturation artifacts
+
+    **Biomass Equation:** `Biomass (Mg/ha) = 250.5 × NDVI - 75.2` (R² = 0.72)
+
+    | Parameter | Value | Source |
+    |-----------|-------|--------|
+    | NDVI range | 0.4 - 0.95 | Standard vegetation threshold |
+    | Slope | 250.5 | Wunbaik Forest, Myanmar |
+    | Intercept | -75.2 | Regional calibration |
+    | Carbon fraction | 47% | IPCC 2006 Guidelines |
+    | Resolution | 50m | Optimized for temporal analysis |
+
+    ⚠️ **Uncertainty:** ±30% (IPCC Tier 2)
+
+    ---
+    ## Data Coverage Tradeoffs
+
+    **Scale-Independent Metrics:** This workflow uses coverage-normalized metrics that are comparable across scenes with different spatial coverage:
+    - **Mean Biomass (Mg/ha):** Average per hectare of observed mangrove
+    - **Mangrove Fraction (%):** Percentage of valid observed area that is mangrove
+    - **Carbon Density (Mg C/ha):** Carbon per hectare of mangrove
+
+    **Coverage Limitations:** Individual Sentinel-2 scenes may only cover a fraction of large study areas due to:
+    - Tile boundaries (scenes are ~100km × 100km)
+    - Cloud masking removing portions of scenes
+    - Orbit patterns causing variable overlap with bounding boxes
+
+    **Alternative: Harmonized Landsat Sentinel (HLS)**
+
+    For production workflows requiring consistent spatial coverage, consider NASA's HLS product:
+    - Combines Landsat 8/9 + Sentinel-2A/B/C into unified constellation
+    - 2-3 day revisit vs 5 days for Sentinel-2 alone
+    - More scenes per time window = better coverage probability
+    - Trade-off: 30m resolution (vs 10m) and requires NASA Earthdata credentials
+
+    This workflow uses open-access Sentinel-2 via AWS Earth Search to avoid credential requirements.
+    """)
+    return
+
+
+@app.cell(hide_code=True)
+def _(coverage_roots, selected_site, temporal_data):
+    mo.stop(temporal_data is None, mo.md("*No data to export*"))
+
+    # Create export DataFrame with all temporal samples
+    # Includes both absolute and scale-independent metrics
+    _export_data = []
+    for _sample in temporal_data["samples"]:
+        _export_data.append(
+            {
+                "site": selected_site,
+                "date": _sample["date"].strftime("%Y-%m-%d"),
+                "scene_id": _sample["scene_id"],
+                "cloud_cover_pct": _sample["cloud_cover"],
+                "valid_coverage_pct": _sample.get("valid_coverage_pct", 0),
+                "biomass_mean_mg_ha": _sample["biomass_mean"],
+                "biomass_std_mg_ha": _sample["biomass_std"],
+                "mangrove_fraction_pct": _sample.get("mangrove_fraction", 0),
+                "carbon_density_mg_c_ha": _sample.get("carbon_density", 0),
+                "mangrove_area_ha": _sample["mangrove_area_ha"],
+                "carbon_stock_mg_c": _sample["carbon_stock"],
+                "footprint_root": coverage_roots.get(_sample["scene_id"], {}).get("footprint_root", ""),
+                "mangrove_root": coverage_roots.get(_sample["scene_id"], {}).get("mangrove_root", ""),
+            }
+        )
+
+    _export_df = pd.DataFrame(_export_data)
+
+    # Save to CSV
+    _csv_filename = f"{selected_site.replace(' ', '_')}_temporal_analysis.csv"
+    _export_df.to_csv(_csv_filename, index=False)
+
+    mo.vstack(
+        [
+            mo.md(f"**Exported:** `{_csv_filename}` ({len(_export_data)} samples)"),
+            mo.ui.table(_export_df, selection=None),
+        ]
+    )
+    return
+
+
+if __name__ == "__main__":
+    app.run()

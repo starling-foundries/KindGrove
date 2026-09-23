@@ -1,0 +1,9 @@
+# The science step image, v0.0.2: v0.0.1 (built by repo2docker from mangrove_workflow_for_cwl.ipynb)
+# with the regenerated workflow script layered on top. Change: the STAC item geometry is the
+# valid-data footprint of the analysis, not the request box.
+# Build from the repository root:
+#   docker build --platform linux/amd64 -f cwl/Dockerfile.science -t ghcr.io/starling-foundries/kindgrove/mangrove-cwl:v0.0.2 .
+FROM ghcr.io/starling-foundries/kindgrove/mangrove-cwl:v0.0.1
+USER root
+COPY --chmod=755 cwl/science/mangrove_workflow_for_cwl /app/cwl/bin/mangrove_workflow_for_cwl
+USER runner

@@ -1,0 +1,9 @@
+# Run the fingerprint step on its own against a STAC directory:
+#   cwltool --no-match-user --no-read-only cwl/fingerprint.cwl cwl/sample_input.yml
+# sample_stac/ is a two-item catalog checked in for this; point `path` at ../outputs after a package run.
+stac:
+  class: Directory
+  path: sample_stac
+zone_level: 11
+profile: ogc-rhealpix
+assets: auto   # the sample items have no mask asset, so only their geometries are fingerprinted

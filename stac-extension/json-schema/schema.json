@@ -1,0 +1,94 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://starling-foundries.github.io/stac-fingerprint/v0.1.0/schema.json",
+  "title": "Fingerprint Extension",
+  "description": "STAC Fingerprint Extension: an identity for the ground a STAC object covers, the SHA-256 root of its compact DGGS zone list (OGC API - DGGS vocabulary).",
+  "oneOf": [
+    {
+      "$comment": "This is the schema for STAC Items.",
+      "allOf": [
+        {
+          "type": "object",
+          "required": ["type", "properties", "assets"],
+          "properties": {
+            "type": {"const": "Feature"},
+            "properties": {
+              "allOf": [
+                {"required": ["fingerprint:root", "fingerprint:zone_level"]},
+                {"$ref": "#/definitions/fields"}
+              ]
+            },
+            "assets": {
+              "type": "object",
+              "additionalProperties": {"$ref": "#/definitions/fields"}
+            }
+          }
+        },
+        {"$ref": "#/definitions/stac_extensions"}
+      ]
+    },
+    {
+      "$comment": "This is the schema for STAC Collections and Catalogs.",
+      "allOf": [
+        {
+          "type": "object",
+          "required": ["type"],
+          "properties": {
+            "type": {"enum": ["Collection", "Catalog"]},
+            "assets": {
+              "type": "object",
+              "additionalProperties": {"$ref": "#/definitions/fields"}
+            }
+          }
+        },
+        {"$ref": "#/definitions/fields"},
+        {"$ref": "#/definitions/stac_extensions"}
+      ]
+    }
+  ],
+  "definitions": {
+    "stac_extensions": {
+      "type": "object",
+      "required": ["stac_extensions"],
+      "properties": {
+        "stac_extensions": {
+          "type": "array",
+          "contains": {"const": "https://starling-foundries.github.io/stac-fingerprint/v0.1.0/schema.json"}
+        }
+      }
+    },
+    "fields": {
+      "type": "object",
+      "properties": {
+        "fingerprint:root": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$",
+          "description": "SHA-256 root of the compact zone list."
+        },
+        "fingerprint:dggrs": {
+          "type": "string",
+          "format": "uri",
+          "description": "URI of the DGGRS definition (OGC API - DGGS Annex B)."
+        },
+        "fingerprint:zone_level": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 15,
+          "description": "DGGRS refinement level of the zone list."
+        },
+        "fingerprint:zone_count": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of zones covered at fingerprint:zone_level."
+        },
+        "fingerprint:profile": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$",
+          "description": "Identity of the hash, ellipsoid and zone-inclusion parameters the root is read against."
+        }
+      },
+      "patternProperties": {"^(?!fingerprint:)": {}},
+      "additionalProperties": false
+    }
+  }
+}

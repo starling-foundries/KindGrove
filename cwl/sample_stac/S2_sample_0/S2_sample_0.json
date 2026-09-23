@@ -1,0 +1,56 @@
+{
+  "type": "Feature",
+  "stac_version": "1.1.0",
+  "stac_extensions": [],
+  "id": "S2_sample_0",
+  "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+      [
+        [
+          88.0,
+          21.5
+        ],
+        [
+          89.1,
+          21.5
+        ],
+        [
+          89.1,
+          22.6
+        ],
+        [
+          88.0,
+          22.6
+        ],
+        [
+          88.0,
+          21.5
+        ]
+      ]
+    ]
+  },
+  "bbox": [
+    88.0,
+    21.5,
+    89.1,
+    22.6
+  ],
+  "properties": {
+    "eo:cloud_cover": 5,
+    "datetime": "2024-01-15T00:00:00Z"
+  },
+  "links": [
+    {
+      "rel": "root",
+      "href": "../catalog.json",
+      "type": "application/json"
+    },
+    {
+      "rel": "parent",
+      "href": "../catalog.json",
+      "type": "application/json"
+    }
+  ],
+  "assets": {}
+}
