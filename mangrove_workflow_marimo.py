@@ -349,6 +349,15 @@ def _(load_temporal_button, max_cloud_cover, selected_site, site_info):
                     _band_xr = _band.rio.write_crs("EPSG:4326")
                     _band_xr.rio.to_raster(_cache_files[_band_name], compress="lzw")
 
+            # Processing baseline >= 04.00 (Jan 2022) declares a BOA offset (raster:bands offset
+            # -0.1 at scale 0.0001). Earth Search delivers those scenes with the offset already
+            # removed (earthsearch:boa_offset_applied) but keeps the declaration, and stackstac's
+            # rescale applies it again, so red goes negative and NDVI overshoots. Add it back.
+            _rb = _item.assets["red"].extra_fields.get("raster:bands", [{}])[0]
+            _shift = -float(_rb.get("offset", 0.0)) if _item.properties.get("earthsearch:boa_offset_applied") else 0.0
+            if _shift:
+                _bands_data = {_k: np.where(np.isnan(_v), np.nan, _v + _shift) for _k, _v in _bands_data.items()}
+
             # Validate scene has enough valid data (>1% non-NaN)
             # Lower threshold allows multi-tile sites to find scenes
             _valid_pct = np.sum(~np.isnan(_bands_data["nir"])) / _bands_data["nir"].size

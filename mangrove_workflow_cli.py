@@ -89,6 +89,16 @@ def download_imagery(item, bbox):
     # Compute data (already clipped by bounds_latlon)
     sentinel2_data = sentinel2_lazy.compute()
 
+    # Processing baseline >= 04.00 (Jan 2022) declares a BOA offset (raster:bands offset -0.1
+    # at scale 0.0001). Earth Search delivers those scenes with the offset already removed
+    # (earthsearch:boa_offset_applied) but keeps the declaration, and stackstac's rescale
+    # applies it again, so red goes negative and NDVI overshoots. Add it back.
+    rb = item.assets["red"].extra_fields.get("raster:bands", [{}])[0]
+    shift = -float(rb.get("offset", 0.0)) if item.properties.get("earthsearch:boa_offset_applied") else 0.0
+    if shift:
+        sentinel2_data = sentinel2_data + shift
+        click.echo(f"   BOA offset re-added: {shift:+.2f} (processing baseline {item.properties.get('s2:processing_baseline')})")
+
     click.echo(f"   Data shape: {sentinel2_data.shape}")
 
     return sentinel2_data
@@ -106,7 +116,7 @@ def calculate_indices(data):
     """
     click.echo("🔬 Calculating vegetation indices...")
 
-    # Extract bands
+    # Extract bands (BOA offset of processing baseline >= 04.00 removed by the caller)
     if "time" in data.dims:
         red = data.sel(band="red").isel(time=0).values
         green = data.sel(band="green").isel(time=0).values
